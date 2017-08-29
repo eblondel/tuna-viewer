@@ -1,2 +1,5 @@
 # tuna-viewer
-Tuna Atlas viewer prototype
+
+Tuna Atlas prototype web-application developed for UN-FAO and IRD, under EC BlueBridge project.
+
+
