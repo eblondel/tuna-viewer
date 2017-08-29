@@ -146,7 +146,6 @@ var app = app || {};
                 if(!maxNb) maxNb = this_.constants.SEARCH_MAX_ITEMS_NUMBER;
                 
                 //base filter
-                //TODO limit to FDI compliant datasets
                 var filter =  new Ows4js.Filter().PropertyName(['dc:subject']).isLike('%timeseries%');
                 
                 //free text filter
@@ -182,6 +181,8 @@ var app = app || {};
                             csw_result.title = csw_result.metadata.identificationInfo[0].abstractMDIdentification.value.citation.ciCitation.title.characterString.value;
                             csw_result.graphic_overview = csw_result.metadata.identificationInfo[0].abstractMDIdentification.value.graphicOverview[0].mdBrowseGraphic.fileName.characterString.value;
                             csw_result._abstract = csw_result.metadata.identificationInfo[0].abstractMDIdentification.value._abstract.characterString.value;
+                            
+                            console.log(csw_result);
                             datasets.push(csw_result);
                         }                       
                     }
@@ -603,7 +604,11 @@ var app = app || {};
         //init catalogue
         app.initDataCatalogue();
         app.displayDatasets();
-        
+        $("#dataset-form").submit(function() {
+            app.displayDatasets();
+            return false;
+        });
+                
         //init widgets
         app.initDialog("aboutDialog", "Welcome!",{"ui-dialog": "about-dialog", "ui-dialog-title": "dialog-title"}, null, 0);
         app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1);
