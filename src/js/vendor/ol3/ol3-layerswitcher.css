@@ -18,12 +18,6 @@
     display: block;
 }
 
-.layer-switcher.shown:nth-child(3) .panel {
-    display: none !important;
-} .layer-switcher:nth-child(3) .panel {
-    display: block;
-}
-
 .layer-switcher button {
     float: right;
     width: 38px;
@@ -56,34 +50,8 @@
 	display:block;
 }
 
-.layer-switcher-layergroup.shown:nth-child(3)  ul {
-
-} .layer-switcher-layergroup:nth-child(3)  ul {
-    display: block !important;
-}
-
 .layer-switcher-layergroup > label {
     font-weight: bold;
-    text-decoration: none !important;
-    height:24px;
-    width: 100%;
-    line-height: 24px;
-    font-size: 10px;
-    padding-left: 4px;
-    padding-right: 2px;
-    text-transform: uppercase;
-    border-bottom: 1px solid rgba(255,255,255, 0.75);
-} .layer-switcher-layergroup:nth-child(3) > label {
-}
-
-.layer-switcher-layergroup > label:hover {
-    cursor: pointer;
-}
-
-.layer-switcher-layergroup.shown > label {
-
-} .layer-switcher-layergroup.shown:nth-child(3) > label {
-
 }
 
 .layer-switcher-layerinfo {
@@ -96,7 +64,7 @@
 }	
 
 .layer-switcher-layer {
-	margin-left: 6px;
+	margin-left:0px;
 }
 
 .layer-switcher-layer  > label{
@@ -109,12 +77,4 @@
 
 .layer-switcher input {
     margin: 4px;
-}
-
-.layer-switcher-layer div img {
-   float: right;
-}
-
-.layer-switcher-layer input {
-    vertical-align: text-bottom;
 }

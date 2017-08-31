@@ -17,6 +17,7 @@ html, body, #map { overflow: hidden; min-height: 100% !important; height: 100% !
 .pages { margin: 0px; padding: 0px; height: 100%; overflow: hidden; position: relative;}
 .page { .hwa; width: 100%; height: 100%; margin: 0px;}
 .page .content { width: 100%; height: 100%;}
+.truncate { height: 65px; display: -webkit-box; margin: 0 auto; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;}
 
 /** Top bar menu **/
 nav {padding-left: 0px;padding-right: 0px;background-color: transparent !important;border: 0px !important;}
@@ -31,16 +32,16 @@ nav ul li.active { background-color: #0C71B8;}
 #aboutDialog p { font-size:85%; }
 .dialog-title { text-align:center; }
 .ui-dialog { border-radius:0px; padding:0px;}
-.about-dialog  {width:400px !important; border-color:#1674B8; background-color:#fff; opacity:0.8; color:#000; }
+.about-dialog  {width:400px !important; border-color:#1674B8; background-color:#fff; opacity:0.95; color:#000; }
 .about-dialog  .ui-dialog-content { color:#000; }
-.about-dialog .ui-dialog-titlebar{border-color:#1674B8; background-color:#fff; opacity:0.8; color:#000; border-radius:0px;}
+.about-dialog .ui-dialog-titlebar{border-color:#1674B8; background-color:#fff; opacity:0.95; color:#000; border-radius:0px;}
 .partner-logo{ height:40px; margin-top:10px; margin-right:5px;}
 .partner-logos{text-align:center;}
 .data-dialog { width: 400px !important; height: 85% !important; top: 15% !important; }
 .query-dialog { width: 400px !important; height: 85% !important; top: 15% !important; }
-.data-dialog, .query-dialog {border-color:#1674B8; background-color:#fff; opacity:0.9; color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
+.data-dialog, .query-dialog {border-color:#1674B8; background-color:#fff; opacity:0.95; color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
 .data-dialog .ui-dialog-content, .query-dialog .ui-dialog-content { color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px; padding: .5em .1em}
-.data-dialog .ui-dialog-titlebar, .query-dialog .ui-dialog-titlebar{background-color:#fff; opacity:0.9; color:#000;border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
+.data-dialog .ui-dialog-titlebar, .query-dialog .ui-dialog-titlebar{background-color:#fff; opacity:0.95; color:#000;border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
 
 /** BROWSER **/
 #dataDialog {height: 100% !important; font-size: 12px !important;}
@@ -57,22 +58,58 @@ nav ul li.active { background-color: #0C71B8;}
 .search-result ul li { line-height: 30px; }
 .search-result ul li i { padding-right: 5px; }
 .search-result .col-md-9{ position: relative; }
-.search-result h6{ margin-top: 0 !important; margin-bottom: 10px !important; font-weight: bold;}
+.search-result h6{ margin-top: 0 !important; margin-bottom: 0px !important; font-weight: bold; width: 90%;}
 .search-result h6 > a, .search-result i { color: #248dc1 !important; }
 .search-result p { font-size:80%;}
 .pagination>li { display: inline-block; }
 .loader { text-align:center; display:none; position: absolute; margin: 30% 0; width: 100%;}
 .loader img { .hwa; width: 48px; height: 48px;}
-.graphic_overview {background: url(../img/loading.gif);
-    background-repeat: no-repeat !important;
-    background-size: 48px 48px !important;
-    background-position: center !important;}
+.graphic_overview {background: url(../img/loading.gif);background-repeat: no-repeat !important;background-size: 48px 48px !important; background-position: center !important;}
+.dataset-select-button{ font-size: 80%; position: absolute; top: 0px; right: 0px; padding: 6px 12px !important;}
 
-/** MAP - LayerSwitcher **/
+/** MAP **/
 #pageMap { display: block; background-color: rgba(2, 113, 190, 1);}
-#layerswitcher, #layerswitcher * {s.hwa;}
+    
+/** MAP - LayerSwitcher **/
+@media print { .sidePanel { display: none; } }
+.sidePanel, .ol-unselectable.ol-control.layer-switcher { border-radius: 0 0 10px 10px; font-size: 12px; z-index: 100; }
+.sidePanel, .sidePanel *, .ol-unselectable.ol-control.layer-switcher, .ol-unselectable.ol-control.layer-switcher * { transition: all .5s; }
+.ol-unselectable.ol-control.layer-switcher * { -moz-transition: none; }
+div.sidePanel:hover, .ol-unselectable.ol-control.layer-switcher.shown { box-shadow: 2px 2px 4px #666; }
+.sidePanel blockquote { background-color: rgba(255,255,255,.8); border-radius: 0 0 10px 10px; margin: 0; opacity: 0; overflow-y: hidden; padding: 0 10px; }
+.sidePanel blockquote { height: 0px; }
+.sidePanel:hover blockquote, .sidePanel *:hover blockquote, .sidePanel blockquote:hover { opacity: 1; padding: 5px 10px 0 10px; }
+#projectionPanel { left: 60px; position: absolute; top: 0; width: 160px; cursor: default;}
+#linkPanel { position: absolute; right: 300px; top: 0; width: 220px; cursor: default;}
+body.embed #linkPanel { display: none; }
+.sidePanel:hover blockquote, .sidePanel *:hover blockquote, .sidePanel blockquote:hover { height: 100%; }
+.sidePanel h4 { background-color: rgba(55,96,146,.6); border-radius: 0 0 10px 10px; color: rgba(255,255,255,.6); font-size: 100%; margin: 0; padding: 5px 10px; text-align: center; }
+.sidePanel:hover h4 { background-color: rgba(55,96,146,1); border-radius: 0 0 0 0; }
+#linkPanel blockquote div { margin: .5em 0; padding: 0; }
+#linkPanel input { width: 195px; }
+#linkPanel blockquote label { opacity: .7; }
+.ol-unselectable.ol-control.layer-switcher { color: rgba(255,255,255,.6); font-size: 12px; margin: 0; padding: 0; position: absolute; right: 30px; text-align: left; top: 0; width: 220px; }
+.ol-unselectable.ol-control.layer-switcher button { background: none; background-color: rgba(55,96,146,.6); border-radius: 0 0 10px 10px; float: none; font-size: 12px; font-weight: normal; height: 26px; margin: 0; width: 220px; }
+.ol-unselectable.ol-control.layer-switcher.shown button { background-color: #1674B8; border-radius: 0 0 0 0; }
+.ol-unselectable.ol-control.layer-switcher button:before { color: rgba(255,255,255,.9); content: 'Legend'; }
+.ol-unselectable.ol-control.layer-switcher .panel { background-color: rgba(255,255,255,.8); border-radius: 0 0 10px 10px; color: #000; font-size: 12px; margin: 0; opacity: 0; padding: 0 10px 5px 10px; }
+.ol-unselectable.ol-control.layer-switcher.shown .panel { opacity: 1; }
+.ol-unselectable.ol-control.layer-switcher.layer-switcher ul { margin: 0; padding: 0; }
+.layer-switcher-layergroup > label {
+    font-weight: bold;
+    text-decoration: none !important;
+    height:24px;
+    width: 100%;
+    line-height: 24px;
+    font-size: 10px;
+    padding-left: 4px;
+    padding-right: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #1674B8;
+} .layer-switcher-layergroup:nth-child(3) > label {
+}
 
-#layerswitcher {
+/* #layerswitcher {
     position: absolute;
 	width: 200px;
     z-index: 10;
@@ -94,4 +131,4 @@ nav ul li.active { background-color: #0C71B8;}
 
 #layerswitcher:hover { opacity: 1;}
 #layerswitcher div { height: 100%; background-color: transparent; border: 0px !important;}
-#layerswitcher  ul { list-style: none; margin: 0px; padding: 0px;}
+#layerswitcher  ul { list-style: none; margin: 0px; padding: 0px;} */

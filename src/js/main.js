@@ -17,7 +17,7 @@ var app = app || {};
 		app.constants = {
             MAP_ZOOM: 3,
 			MAP_PROJECTION: 'EPSG:4326',
-            MAP_OVERLAY_GROUP_NAMES: [{name: "Tuna maps"},{name: "Base overlays"}],
+            MAP_OVERLAY_GROUP_NAMES: [{name: "Base overlays"},{name: "Tuna maps"}],
             OGC_CSW_BASEURL: "https://geonetwork1-tunaatlas.d4science.org/geonetwork/srv/en/csw",
             OGC_WMS_BASEURL: undefined,
             OGC_WFS_BASEURL: undefined,
@@ -28,56 +28,47 @@ var app = app || {};
 		//Utils
 		//===========================================================================================
 
-        // app.lightenMetadata = function(obj) {
-            // if (obj['TYPE_NAME']){
-                // delete obj['TYPE_NAME'];
-            // };
-            // if(typeof obj.name != "undefined"){
-              // if(typeof obj.name.CLASS_NAME != "undefined"){
-                // if(obj.name.CLASS_NAME == 'Jsonix.XML.QName'){
-                    // obj = obj.value;
-                // }
-              // }
-            // }
-            
-            // if(obj instanceof Array){
-                // var newObj = new Array();
-                // for(var i=0;i<obj.length;i++) {
-                    // var newObjItem = this.lightenMetadata(obj[i]);
-                    // newObj.push(newObjItem);
-                // }
-                // obj = newObj;
-            // }else{
-                // if(typeof obj === 'object'){
-                    // var newObj = new Object();
-                    // for(p in obj) {
-                       // if(typeof obj[p] === 'object'){
-                          // newObj[p] = this.lightenMetadata(obj[p]);
-                       // }else{
-                          // newObj[p] = obj[p];
-                       // }
-                    // }
-                    // obj = newObj;
-                // }
-            // }
-            // return obj;
-        // }
-        
-        app.lightenMetadata = function(obj) {
-            var this_ = this;
-            var key = 'TYPE_NAME';
-            var clazz = Jsonix.XML.QName;
-            if (typeof obj === 'object') {
-                delete obj[key];
-                if(obj.name) if(obj.name instanceof clazz){
-                    obj = obj.value;
+        /**
+         * app.ligthenMetadata
+         * Ligthens a metadata parsed with ogc-schemas library
+         * @param inObj
+         */
+        app.lightenMetadata = function(inObj) {
+            var obj = inObj;
+            if(obj instanceof Array){
+                var newObj = new Array();
+                for(var i=0;i<obj.length;i++) {
+                   var newObjItem = this.lightenMetadata(obj[i]);
+                   newObj.push(newObjItem);
                 }
-                Object.keys(obj).forEach(x => this_.lightenMetadata(obj[x], key, clazz));
-            } else if (Array.isArray(obj)) {
-                obj.forEach(val => this_.lightenMetadata(val, key, clazz));
+                obj = newObj;
+            }else{
+                if(typeof obj === 'object'){
+                
+                    if (obj['TYPE_NAME']){
+                        delete obj['TYPE_NAME'];
+                    };
+                    if(typeof obj.name != "undefined"){
+                      if(typeof obj.name.CLASS_NAME != "undefined"){
+                        if(obj.name.CLASS_NAME == 'Jsonix.XML.QName'){
+                            obj = this.lightenMetadata(obj.value);
+                        }
+                      }
+                    }
+                    var keys = Object.keys(obj);
+                    for(var i=0;i<keys.length;i++) {
+                      var p = keys[i];
+                      if(["characterString", "integer", "real", "decimal", "_boolean"].indexOf(p) != -1){
+                        obj = this.lightenMetadata(obj[p]);
+                      }else{
+                        obj[p] = this.lightenMetadata(obj[p]);
+                      }
+                    }
+                 
+                }
             }
-            return(obj);
-        };
+            return obj;
+        }
         
 		// ISO/OGC metadata management
 		//==========================================================================================
@@ -174,16 +165,19 @@ var app = app || {};
                             var csw_result = csw_results[i];    
                             
                             //result object
-                            csw_result.metadata = csw_result.value;
-                            //TODO work on a lightening metadata
-                            //csw_result.metadata = this_.lightenMetadata(csw_result.value);
+                            csw_result.metadata = this_.lightenMetadata(csw_result.value);
                             delete csw_result.value;
-                            csw_result.title = csw_result.metadata.identificationInfo[0].abstractMDIdentification.value.citation.ciCitation.title.characterString.value;
-                            csw_result.graphic_overview = csw_result.metadata.identificationInfo[0].abstractMDIdentification.value.graphicOverview[0].mdBrowseGraphic.fileName.characterString.value;
-                            csw_result._abstract = csw_result.metadata.identificationInfo[0].abstractMDIdentification.value._abstract.characterString.value;
+                            csw_result.title = csw_result.metadata.identificationInfo[0].abstractMDIdentification.citation.ciCitation.title;
+                            csw_result.title_tooltip = csw_result.title;
+                            csw_result.graphic_overview = csw_result.metadata.identificationInfo[0].abstractMDIdentification.graphicOverview[0].mdBrowseGraphic.fileName;
+                            csw_result._abstract = csw_result.metadata.identificationInfo[0].abstractMDIdentification._abstract;
                             
-                            console.log(csw_result);
-                            datasets.push(csw_result);
+                            if(csw_result.metadata.contentInfo){
+                                console.log(csw_result.metadata);
+                                datasets.push(csw_result);
+                            }
+                            
+                            
                         }                       
                     }
                       
@@ -212,6 +206,7 @@ var app = app || {};
                 var options = {
                     valueNames: [   
                         'title',
+                        { name: 'title_tooltip', attr: 'title' },
                         '_abstract',
                         { name: 'graphic_overview', attr: 'data-mainSrc' }
                     ],
@@ -311,8 +306,24 @@ var app = app || {};
               							},
 								crossOrigin: 'anonymous',
 								wrapX: true
-                            				})
-						})
+                            })
+						}),
+                        new ol.layer.Tile({
+                            title : "Oceans imagery",
+                            type: 'base',
+                            source : new ol.source.TileWMS({
+                                url : "http://www.fao.org/figis/geoserver/fifao/wms",
+                                params : {
+                                        'LAYERS' : 'fifao:OB_LR,fifao:UN_CONTINENT2',
+                                        'VERSION': '1.1.1',
+                                        'FORMAT' : 'image/png',
+                                        'TILED'	 : true,
+                                        'TILESORIGIN' : [-180,-90].join(',')
+                                },
+                                wrapX: true,
+                                serverType : 'geoserver'
+                            })
+                        })
 
 					]
 				})
@@ -320,11 +331,11 @@ var app = app || {};
 
             
 			//overlay groups
-			overlays = new Array();
-            for(var i=0;i< this.constants.MAP_OVERLAY_GROUP_NAMES;i++){
-                overlay = new ol.layer.Group({
-                    'title': this.constants.MAP_OVERLAY_GROUP_NAMES[i].name,
-                    layers: [ ],
+			var overlays = new Array();
+            for(var i=0;i< this.constants.MAP_OVERLAY_GROUP_NAMES.length;i++){
+                var overlay = new ol.layer.Group({
+                    'title': this_.constants.MAP_OVERLAY_GROUP_NAMES[i].name,
+                    layers: [],
                 });
                 overlays.push(overlay);
             }
@@ -363,7 +374,6 @@ var app = app || {};
             
             if(main){
                 map.addControl( new ol.control.LayerSwitcher({
-                        target: "layerswitcher",
                         displayLegend: true,
                         collapsableGroups : true,
                         overlayGroups : this.constants.MAP_OVERLAY_GROUP_NAMES
@@ -390,6 +400,49 @@ var app = app || {};
             
             return map;
 		}
+        
+        /**
+		 * Adds layer
+		 * @param main (true/false)
+		 * @param mainOverlayGroup
+		 * @param id
+         * @param title
+         * @param wmsUrl
+         * @param layer
+       	 * @param cql_filter
+		 */
+		app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, cql_filter){
+			var layer = new ol.layer.Tile({
+				id : id,
+				title : title,
+				source : new ol.source.TileWMS({
+					url : wmsUrl,
+					params : {
+							'LAYERS' : layer,
+							'VERSION': '1.1.1',
+							'FORMAT' : 'image/png',
+							'TILED'	 : true,
+							'TILESORIGIN' : [-180,-90].join(','),
+                            'CQL_FILTER': cql_filter
+					},
+					wrapX: true,
+					serverType : 'geoserver'
+				}),
+				opacity : opacity,
+				visible : visible
+			});
+			this.setLegendGraphic(layer);
+            layer.id = id;
+			layer.showLegendGraphic = showLegend;
+			
+            if(main){
+				if(mainOverlayGroup > this.layers.overlays.length-1){
+					alert("Overlay group with index " + mainOverlayGroup + " doesn't exist");
+				}
+				layer.overlayGroup = this.constants.MAP_OVERLAY_GROUP_NAMES[mainOverlayGroup];
+               	this.layers.overlays[mainOverlayGroup].getLayers().push(layer);
+            }
+		}
 
 		/**
 		 * Set legend graphic
@@ -412,52 +465,7 @@ var app = app || {};
             request += '&WIDTH=30';
 			lyr.legendGraphic = request;
 		}
-		
-        /**
-		 * Adds  layer
-		 * @param main (true/false)
-		 * @param mainOverlayGroup
-		 * @param id
-        	 * @param title
-        	 * @param layer
-       		 * @param cql_filter
-		 */
-		app.addLayer = function(main, mainOverlayGroup, id, title, layer, cql_filter){
-			var layer = new ol.layer.Tile({
-				id : id,
-				title : title,
-				source : new ol.source.TileWMS({
-					url : this.constants.OGC_WMS_BASEURL,
-					params : {
-							'LAYERS' : layer,
-							'VERSION': '1.1.1',
-							'FORMAT' : 'image/png',
-							'TILED'	 : true,
-							'TILESORIGIN' : [-180,-90].join(','),
-                            'CQL_FILTER': cql_filter
-					},
-					wrapX: true,
-					serverType : 'geoserver',
-					crossOrigin: 'anonymous'
-				}),
-				opacity : 0.8,
-				visible : true
-			});
-			this.setLegendGraphic(layer);
-            layer.id = id;
-			layer.showLegendGraphic = true;
-           
-            if(main){
-				if(mainOverlayGroup > this.overlays.length-1){
-					alert("Overlay group with index " + mainOverlayGroup + " doesn't exist");
-				}
-				layer.overlayGroup = this.constants.MAP_OVERLAY_GROUP_NAMES[mainOverlayGroup];
-                this.overlays[mainOverlayGroup].getLayers().push(layer);
-            }else{
-				layer.overlayGroup = this.constants.MAP_OVERLAY_GROUP_NAMES[0];
-               	this.featureMap.getLayers().push(layer);
-            }
-		}
+       
     
 		/**
 		 * Util method to get layer by property
@@ -487,6 +495,13 @@ var app = app || {};
             $($("li[data-where='#pageMap']")).on("click", function(e){
                 $($("#map").find("canvas")).show();
             });
+            
+            //layers of interest
+            this_.addLayer(true, 0, "eez", "Exclusive Economic Zones", "http://geo.vliz.be/geoserver/MarineRegions/wms", "MarinRegions:eez", false, true, 0.6);
+            this_.addLayer(true, 0, "fsa", "FAO major areas & breakdown", "http://www.fao.org/figis/geoserver/area/wms", "area:FAO_AREAS", false, true, 0.9);
+            this_.addLayer(true, 0, "grid1x1", "Grid 1x1 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid1x1", false, true, 0.5);
+            this_.addLayer(true, 0, "grid5x5", "Grid 5x5 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid5x5", false, true, 0.5);
+            this_.addLayer(true, 0, "marineareas", "Marine areas",  "http://www.fao.org/figis/geoserver/fifao/wms", "fifao:MarineAreas", true, false, 0.9);
         }
 
         
@@ -497,7 +512,7 @@ var app = app || {};
         /**
        * Init dialog
        */
-       app.initDialog = function(id, title, classes, position, liIdx){
+       app.initDialog = function(id, title, classes, position, liIdx, iconName){
              if(!classes){
                 classes  = {
                   "ui-dialog": "ui-corner-all",
@@ -522,6 +537,10 @@ var app = app || {};
                 },
                 open: function( event, ui ) {
                     $($("nav li")[liIdx]).addClass("active");
+                    if(iconName){
+                        $.each($(".ui-dialog-title").find("span"), function(idx,item){$(item).remove()});
+                        $(".ui-dialog-title").append("<span class='glyphicon glyphicon-"+iconName+"' style='float:left;'></span>");
+                    }
                 },
                 close: function( event, ui ) {
                     $($("nav li")[liIdx]).removeClass("active");
@@ -610,9 +629,9 @@ var app = app || {};
         });
                 
         //init widgets
-        app.initDialog("aboutDialog", "Welcome!",{"ui-dialog": "about-dialog", "ui-dialog-title": "dialog-title"}, null, 0);
-        app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1);
-        app.initDialog("queryDialog", "Query a dataset", {"ui-dialog": "query-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 2);
+        app.initDialog("aboutDialog", "Welcome!",{"ui-dialog": "about-dialog", "ui-dialog-title": "dialog-title"}, null, 0, null);
+        app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1, 'search');
+        app.initDialog("queryDialog", "Query a dataset", {"ui-dialog": "query-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 2, 'filter');
         app.openAboutDialog();
         
 
