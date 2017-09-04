@@ -224,7 +224,6 @@ var app = app || {};
                 var datasetList = new List('dataset-list', options, results);
                 this_.displayGraphicOverviews();
                 datasetList.on("updated", function(evt){
-                     $($("#dataset-list").find("section")[0]).empty();
                     this_.displayGraphicOverviews();
                 });
             });
@@ -332,9 +331,7 @@ var app = app || {};
                 };
                 var datasetSelection = new List('dataset-selection', options, this_.selection);
                 this_.displayGraphicOverviews();
-                datasetSelection.on("updated", function(evt){
-                     $($("#dataset-selection").find("section")[0]).empty();
-                });
+                //datasetSelection.on("updated", function(evt){});
             }else{
                 $($("#dataset-selection").find("section")[0]).html('<p style="font-style:italic;font-size:12px;text-align:center;">No dataset selected</p>');
             }
@@ -368,7 +365,29 @@ var app = app || {};
                 templateResult: formatDatasetResult,
                 templateSelection: formatDatasetSelection
             });
+            
+            $("#datasetSelector").on("select2:select", function (e) {
+                this_.getDSD(e.params.data.id);
+            });
          }
+         
+         /**
+          * app.getDSD
+          * @param pid
+          */
+          app.getDSD = function(pid){
+            var target = this.selection.filter(function(data){if(data.pid == pid){return data}});
+            if(target.length>0) target = target[0];
+            console.log(target);
+            $.ajax({
+                url: target.dsd,
+                contentType: 'application/xml',
+                type: 'GET',
+                success: function(response){
+                    console.log(response)
+                }
+            });
+          }
          
       
 		// Map UI
