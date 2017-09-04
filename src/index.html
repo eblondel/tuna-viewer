@@ -16,8 +16,9 @@
     
     <!-- CSS stylesheets -->
     <!-- =============== -->
-     <link rel="stylesheet" type="text/css" href="js/vendor/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="js/vendor/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" type="text/css" href="js/vendor/select2/select2.css" />
     <link rel="stylesheet" type="text/css" href="css/main.css" />
 
     <!-- Javascripts deps -->
@@ -60,6 +61,8 @@
     <script type="application/javascript" src="js/vendor/bootstrap/bootstrap.js"></script>
     <!-- JQuery UI -->
     <script type="application/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <!--Jquery Select2-->
+    <script type="application/javascript" src="js/vendor/select2/select2.js"></script>
     <!--OpenLayers 3-->
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.18.2/ol-debug.js"></script>
     <script type="application/javascript" src="js/vendor/ol3/ol3-loadingpanel.js"></script>
@@ -93,7 +96,14 @@
         <div class="page" id="pageMap">
             <div class="content">
                 <div id="map"></div>
-                <div id="layerswitcher"></div>
+                <div id="selectionPanel" class="sidePanel">
+					<h4><span class="glyphicon glyphicon-shopping-cart" style="margin-right:6px;"></span>Data selection</h4>
+                    <div id="dataset-selection">
+                        <blockquote>
+                            <section class="col-xs-12 col-sm-12 col-md-12 list"></section>
+                        </blockquote>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -144,7 +154,23 @@
         </div>
     </div>
     <div id="queryDialog">
-        Some data query here
+        <!-- Select a dataset -->
+        <div class="selector-wrapper">
+            <div id="datasetSelectorWrapper">
+                <select id="datasetSelector"></select>
+            </div>
+        </div>
+        
+        <!-- Dynamic query UI -->
+        <div>
+          <!-- Search loader -->
+          <p id="dsd-loader" class="loader">
+            <img alt="loading" src="img/loading.gif" />
+            <br /><br />Fetching data structure definition...
+          </p>
+          <!-- Dynamic query -->
+          
+        </div>
     </div>
     
     <!-- Templates -->
@@ -157,7 +183,17 @@
 	   </div>
        <div class="col-xs-9 col-sm-9 col-md-9 excerpet">
             <h6><a href="#" title="" class="title title_tooltip truncate"></a></h6>
-            <button class="btn btn-default dataset-select-button" title="Add to selection"><span class="glyphicon glyphicon-shopping-cart"></span></button>
+            <button class="btn btn-default dataset-button pid" data-pid="" title="Add to selection" onclick="app.selectDataset(this)"><span class="glyphicon glyphicon-shopping-cart"></span></button>
+        </div>
+      </article>
+    </div>
+    
+    <!-- Dataset selection template -->
+    <div style="display:none;">
+     <article id="dataset-item-selection" class="search-result row">
+       <div class="col-xs-12 col-sm-12 col-md-12 excerpet">
+            <h6><a href="#" title="" class="title title_tooltip truncate"></a></h6>
+            <button class="btn btn-default dataset-button pid" data-pid="" title="Remove from selection" onclick="app.unselectDataset(this)"><span class="glyphicon glyphicon-trash"></span></button>
         </div>
       </article>
     </div>

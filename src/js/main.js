@@ -167,13 +167,16 @@ var app = app || {};
                             //result object
                             csw_result.metadata = this_.lightenMetadata(csw_result.value);
                             delete csw_result.value;
+                            csw_result.pid = csw_result.metadata.fileIdentifier;
                             csw_result.title = csw_result.metadata.identificationInfo[0].abstractMDIdentification.citation.ciCitation.title;
                             csw_result.title_tooltip = csw_result.title;
                             csw_result.graphic_overview = csw_result.metadata.identificationInfo[0].abstractMDIdentification.graphicOverview[0].mdBrowseGraphic.fileName;
                             csw_result._abstract = csw_result.metadata.identificationInfo[0].abstractMDIdentification._abstract;
                             
                             if(csw_result.metadata.contentInfo){
-                                console.log(csw_result.metadata);
+                                csw_result.dsd = csw_result.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
+                                csw_result.dsd = csw_result.dsd.replace("metadata.show","xml.metadata.get");
+                                console.log(csw_result);
                                 datasets.push(csw_result);
                             }
                             
@@ -204,20 +207,24 @@ var app = app || {};
             this.getDatasets(false, bbox).then(function(results){
                 console.log(results);
                 var options = {
-                    valueNames: [   
+                    valueNames: [
                         'title',
                         { name: 'title_tooltip', attr: 'title' },
                         '_abstract',
-                        { name: 'graphic_overview', attr: 'data-mainSrc' }
+                        { name: 'graphic_overview', attr: 'data-mainSrc' },
+                        { name: 'pid', attr: 'data-pid'}
+                        
                     ],
                     item: 'dataset-item',
                     pagination: true,
                     page: 5
                 };
                 $("#dataset-loader").hide();
+                this_.datasets = results;
                 var datasetList = new List('dataset-list', options, results);
                 this_.displayGraphicOverviews();
                 datasetList.on("updated", function(evt){
+                     $($("#dataset-list").find("section")[0]).empty();
                     this_.displayGraphicOverviews();
                 });
             });
@@ -248,6 +255,121 @@ var app = app || {};
                 im.src = $this.data("mainsrc");
             });
          }
+         
+         //selected datasets
+         app.selection = new Array();
+         
+         /**
+          * app.selectDataset
+          * Selects a dataset
+          * @param elm
+          *
+          **/
+         app.selectDataset = function(elm){
+            var pid = elm.getAttribute('data-pid');
+            var out =false;
+            if(this.selection.map(function(i){return i.pid}).indexOf(pid) == -1){
+                var dataset = this.datasets.filter(function(data){if(data.pid == pid){return data}})[0];
+                this.selection.push(dataset);
+                this.updateSelection();
+                out = true;
+                
+            }
+            return out;
+         }
+         
+         /**
+          * app.unselectDataset
+          * Unselects a dataset
+          * @param elm
+          **/
+         app.unselectDataset = function(elm){
+            var pid = elm.getAttribute('data-pid');
+            var out = false;
+            var len1 = this.selection.length;
+            this.selection = this.selection.filter(function(data){if(data.pid != pid){return data}});
+            var len2 =  this.selection.length;
+            out = len2<len1;
+            this.updateSelection();
+            return out;
+         }
+         
+         /**
+          * app.updateSelection
+          * Actions performed when updating the dataset selection
+          */
+         app.updateSelection = function(){
+            var this_ = this;
+            
+            //update Data list UI
+            $.each($("#dataDialog").find(".search-result"), function(idx, item){
+                $item = $(item);
+                var buttons = $item.find("button");
+                var adder = $(buttons[0]);
+                var remover = $(buttons[1]);
+                var pid = adder.attr("data-pid");
+                if(this_.selection.map(function(item){return item.pid}).indexOf(pid) != -1){
+                    adder.prop("disabled", true);
+                    remover.css("display", "block");
+                }else{
+                    adder.prop("disabled", false);
+                    remover.css("display", "none");
+                }
+            })
+            
+            //update Data selection UI
+            $($("#dataset-selection").find("section")[0]).empty();
+            if(this_.selection.length > 0){
+                var options = {
+                    valueNames: [
+                        'title',
+                        { name: 'title_tooltip', attr: 'title' },
+                        '_abstract',
+                        { name: 'pid', attr: 'data-pid'}
+                        
+                    ],
+                    item: 'dataset-item-selection'
+                };
+                var datasetSelection = new List('dataset-selection', options, this_.selection);
+                this_.displayGraphicOverviews();
+                datasetSelection.on("updated", function(evt){
+                     $($("#dataset-selection").find("section")[0]).empty();
+                });
+            }else{
+                $($("#dataset-selection").find("section")[0]).html('<p style="font-style:italic;font-size:12px;text-align:center;">No dataset selected</p>');
+            }
+         }
+         
+         /**
+          * app.updateDatasetSelector
+          */
+         app.updateDatasetSelector = function(){
+            var this_ = this;
+            var formatDatasetSelection = function(dataset) {
+              if (!dataset.id) { return dataset.text; }
+              var $dataset = $(
+                '<span class="dataset-subtitle" >' + dataset.id + '</span>'
+              );
+              return $dataset;
+            };
+            var formatDatasetResult = function(dataset) {
+              if (!dataset.id) { return dataset.text; }
+              var $dataset = $(
+                '<span class="dataset-subtitle" >' + dataset.id + '</span>'+
+                '<br><span class="dataset-title"> ' + dataset.text + '</span>'
+              );
+              return $dataset;
+            };
+            $("#datasetSelector").select2({
+                theme: "classic",
+                allowClear: true,
+                placeholder: "Select a dataset",
+                data: this_.selection.map(function(item){ return { id: item.pid, text: item.title}}),
+                templateResult: formatDatasetResult,
+                templateSelection: formatDatasetSelection
+            });
+         }
+         
       
 		// Map UI
 		//===========================================================================================
@@ -499,8 +621,8 @@ var app = app || {};
             //layers of interest
             this_.addLayer(true, 0, "eez", "Exclusive Economic Zones", "http://geo.vliz.be/geoserver/MarineRegions/wms", "MarinRegions:eez", false, true, 0.6);
             this_.addLayer(true, 0, "fsa", "FAO major areas & breakdown", "http://www.fao.org/figis/geoserver/area/wms", "area:FAO_AREAS", false, true, 0.9);
-            this_.addLayer(true, 0, "grid1x1", "Grid 1x1 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid1x1", false, true, 0.5);
-            this_.addLayer(true, 0, "grid5x5", "Grid 5x5 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid5x5", false, true, 0.5);
+            this_.addLayer(true, 0, "grid1x1", "Grid 1x1 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid1x1,tunaatlas:continent", false, true, 0.5);
+            this_.addLayer(true, 0, "grid5x5", "Grid 5x5 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid5x5,tunaatlas:continent", false, true, 0.5);
             this_.addLayer(true, 0, "marineareas", "Marine areas",  "http://www.fao.org/figis/geoserver/fifao/wms", "fifao:MarineAreas", true, false, 0.9);
         }
 
@@ -512,7 +634,7 @@ var app = app || {};
         /**
        * Init dialog
        */
-       app.initDialog = function(id, title, classes, position, liIdx, iconName){
+       app.initDialog = function(id, title, classes, position, liIdx, iconName, onopen, onclose){
              if(!classes){
                 classes  = {
                   "ui-dialog": "ui-corner-all",
@@ -541,9 +663,11 @@ var app = app || {};
                         $.each($(".ui-dialog-title").find("span"), function(idx,item){$(item).remove()});
                         $(".ui-dialog-title").append("<span class='glyphicon glyphicon-"+iconName+"' style='float:left;'></span>");
                     }
+                    if(onopen) onopen();
                 },
                 close: function( event, ui ) {
                     $($("nav li")[liIdx]).removeClass("active");
+                    if(onclose) onclose();
                 }
             });
        }
@@ -627,11 +751,14 @@ var app = app || {};
             app.displayDatasets();
             return false;
         });
+        app.updateSelection();
                 
         //init widgets
         app.initDialog("aboutDialog", "Welcome!",{"ui-dialog": "about-dialog", "ui-dialog-title": "dialog-title"}, null, 0, null);
         app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1, 'search');
-        app.initDialog("queryDialog", "Query a dataset", {"ui-dialog": "query-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 2, 'filter');
+        app.initDialog("queryDialog", "Query a dataset", {"ui-dialog": "query-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 2, 'filter', function(){
+            app.updateDatasetSelector();
+        });
         app.openAboutDialog();
         
 
