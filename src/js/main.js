@@ -879,20 +879,27 @@ var app = app || {};
        	 * @param cql_filter
          * @param viewparams
 		 */
-		app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, cql_filter, viewparams){
+		app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, tiled, cql_filter, viewparams){
             var layerParams = {
                     'LAYERS' : layer,
                     'VERSION': '1.1.1',
-                    'FORMAT' : 'image/png',
-                    'TILED'	 : true,
-                    'TILESORIGIN' : [-180,-90].join(',')
+                    'FORMAT' : 'image/png'
             }
+            var olLayerClass = ol.layer.Image;
+            var olSourceClass = ol.source.ImageWMS;
+            if(tiled){
+                layerParams['TILED'] = true;
+                layerParams['TILESORIGIN'] = [-180,-90].join(',');
+                olLayerClass = ol.layer.Tile;
+                olSourceClass = ol.source.TileWMS;
+            }
+            
             if(cql_filter){ layerParams['CQL_FILTER'] = cql_filter; }
             if(viewparams){ layerParams['VIEWPARAMS'] = viewparams; }
-			var layer = new ol.layer.Tile({
+			var layer = new olLayerClass({
 				id : id,
 				title : title,
-				source : new ol.source.TileWMS({
+				source : new olSourceClass({
 					url : wmsUrl,
 					params : layerParams,
 					wrapX: true,
@@ -927,7 +934,7 @@ var app = app || {};
                 var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
                                     function(item){if(item.ciOnlineResource.linkage.url.indexOf('wms')!=-1) return item
                                })[0].ciOnlineResource.linkage.url;
-                this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.6, null, this_.getViewParams());
+                this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.6, false, null, this_.getViewParams());
             }else{
                 //update viewparams
                 layer.getSource().updateParams({'VIEWPARAMS' : this_.getViewParams()});
@@ -940,20 +947,22 @@ var app = app || {};
 		 */	 
 		app.setLegendGraphic = function(lyr) {
 			var source = lyr.getSource();
-			if( !(source instanceof ol.source.TileWMS) ) return false;
-			var params = source.getParams();
-			var request = '';
-			request += source.getUrls()[0] + '?';
-			request += 'VERSION=1.0.0';
-			request += '&REQUEST=GetLegendGraphic';
-			request += '&LAYER=' + params.LAYERS;
-			request += '&STYLE=' + ( (params.STYLES)? params.STYLES : '');
-			request += '&LEGEND_OPTIONS=forcelabels:on;forcerule:True;fontSize:12'; //maybe to let as options
-			request += '&SCALE=139770286.4465912'; //to investigate
-			request += '&FORMAT=image/png';
-			request += '&TRANSPARENT=true';
-            request += '&WIDTH=30';
-			lyr.legendGraphic = request;
+			if( source instanceof ol.source.TileWMS | source instanceof ol.source.ImageWMS ){
+                console.log(source);
+                var params = source.getParams();
+                var request = '';
+                request += (source instanceof ol.source.TileWMS? source.getUrls()[0] : source.getUrl()) + '?';
+                request += 'VERSION=1.0.0';
+                request += '&REQUEST=GetLegendGraphic';
+                request += '&LAYER=' + params.LAYERS;
+                request += '&STYLE=' + ( (params.STYLES)? params.STYLES : '');
+                request += '&LEGEND_OPTIONS=forcelabels:on;forcerule:True;fontSize:12'; //maybe to let as options
+                request += '&SCALE=139770286.4465912'; //to investigate
+                request += '&FORMAT=image/png';
+                request += '&TRANSPARENT=true';
+                request += '&WIDTH=30';
+                lyr.legendGraphic = request;
+            }
 		}
        
     
@@ -987,11 +996,11 @@ var app = app || {};
             });
             
             //layers of interest
-            this_.addLayer(true, 0, "eez", "Exclusive Economic Zones", "http://geo.vliz.be/geoserver/MarineRegions/wms", "MarinRegions:eez", false, true, 0.6);
-            this_.addLayer(true, 0, "fsa", "FAO major areas & breakdown", "http://www.fao.org/figis/geoserver/area/wms", "area:FAO_AREAS", false, true, 0.9);
-            this_.addLayer(true, 0, "grid1x1", "Grid 1x1 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid1x1,tunaatlas:continent", false, true, 0.5);
-            this_.addLayer(true, 0, "grid5x5", "Grid 5x5 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid5x5,tunaatlas:continent", false, true, 0.5);
-            this_.addLayer(true, 0, "marineareas", "Marine areas",  "http://www.fao.org/figis/geoserver/fifao/wms", "fifao:MarineAreas", true, false, 0.9);
+            this_.addLayer(true, 0, "eez", "Exclusive Economic Zones", "http://geo.vliz.be/geoserver/MarineRegions/wms", "MarinRegions:eez", false, true, 0.6, true);
+            this_.addLayer(true, 0, "fsa", "FAO major areas & breakdown", "http://www.fao.org/figis/geoserver/area/wms", "area:FAO_AREAS", false, true, 0.9, true);
+            this_.addLayer(true, 0, "grid1x1", "Grid 1x1 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid1x1,tunaatlas:continent", false, true, 0.5, true);
+            this_.addLayer(true, 0, "grid5x5", "Grid 5x5 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid5x5,tunaatlas:continent", false, true, 0.5, true);
+            this_.addLayer(true, 0, "marineareas", "Marine areas",  "http://www.fao.org/figis/geoserver/fifao/wms", "fifao:MarineAreas", true, false, 0.9, true);
         }
 
         
