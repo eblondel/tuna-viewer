@@ -43,8 +43,9 @@ nav ul li.active { background-color: #0C71B8;}
 .data-dialog .ui-dialog-content, .query-dialog .ui-dialog-content { color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px; padding: .5em .1em}
 .data-dialog .ui-dialog-titlebar, .query-dialog .ui-dialog-titlebar{background-color:#fff; opacity:0.95; color:#000;border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
 
+#dataDialog, #queryDialog {height: 100% !important; font-size: 12px !important;}
+
 /** BROWSER **/
-#dataDialog {height: 100% !important; font-size: 12px !important;}
 #dataset-selection, #dataset-list { height:70%;}
 #dataset-selection section.list, #dataset-list section.list { height: 100%; }
 #dataset-pages { text-align: center; }
@@ -68,13 +69,25 @@ nav ul li.active { background-color: #0C71B8;}
 .dataset-button{ font-size: 80%; position: absolute; top: 0px; right: 0px; padding: 6px 12px !important;}
 
 /** QUERY **/
+#dsd-ui { text-align: center; }
+.select2 {text-align: left; margin-top: 5px; }
 .selector-wrapper {position: relative; width: 100%; text-align: center;}
-#datasetSelector, #fatasetSelector:disabled { width: 90% !important; height: 30px !important;}
-#select2-datasetSelector-results .select2-results__option.select2-results__option--highlighted{
-    background-color: beige !important;
-}   
-.dataset-title {color: #0C71B8; font-weight: bold; font-size: 80%;}
-.dataset-subtitle{color: #bbb; font-weight: bold; font-style: italic; font-size: 90%;} 
+.select2-search__field{ width: 100% !important;}
+.select2-results__options[aria-multiselectable=true] .select2-results__option[aria-selected=true] {display:none !important;} 
+.select2-results__option.select2-results__option--highlighted{background-color: beige !important;}   
+.dataset-title {color: #0C71B8; font-weight: bold; font-size: 90%;}
+.dataset-subtitle{color: #6b6767; font-weight: bold; font-style: italic; font-size: 90%;}
+.dsd-ui-dimension{ width:90%; text-align:left !important;}
+.dsd-ui-dimension-time{ margin: 10px auto;}
+.dsd-ui-dimension-datepicker{ width:100px; margin-right:10px;}
+.dsd-ui-item-label{color: #0C71B8;}
+.dsd-ui-item-sublabel{font-style: italic; color: orange;}
+.dsd-ui-item-code{font-style: italic; color: #000;}
+.img-flag { margin-right: 5px; margin-bottom: 3px;}
+
+#datasetSelector, #datasetSelector:disabled { width: 80% !important; height: 30px !important;}
+#datasetMapper {margin-top: 5px;}
+
 
 /** MAP **/
 #pageMap { display: block; background-color: rgba(2, 113, 190, 1);}
@@ -95,8 +108,8 @@ div.sidePanel:hover, .ol-unselectable.ol-control.layer-switcher.shown { box-shad
 #selectionPanel blockquote div { margin: .5em 0; padding: 0; }
 #selectionPanel input { width: 370px; }
 #selectionPanel blockquote label { opacity: .7; }
-.ol-unselectable.ol-control.layer-switcher { color: rgba(255,255,255,.6); font-size: 12px; margin: 0; padding: 0; position: absolute; right: 30px; text-align: left; top: 0; width: 220px; }
-.ol-unselectable.ol-control.layer-switcher button { background: none; background-color: rgba(55,96,146,.6); border-radius: 0 0 10px 10px; float: none; font-size: 12px; font-weight: normal; height: 26px; margin: 0; width: 220px; }
+.ol-unselectable.ol-control.layer-switcher { color: rgba(255,255,255,.6); font-size: 12px; margin: 0; padding: 0; position: absolute; right: 30px; text-align: left; top: 0; width: 245px; }
+.ol-unselectable.ol-control.layer-switcher button { background: none; background-color: rgba(55,96,146,.6); border-radius: 0 0 10px 10px; float: none; font-size: 12px; font-weight: normal; height: 26px; margin: 0; width: 245px; }
 .ol-unselectable.ol-control.layer-switcher.shown button { background-color: #1674B8; border-radius: 0 0 0 0; }
 .ol-unselectable.ol-control.layer-switcher button:before { color: rgba(255,255,255,.9); content: 'Legend'; }
 .ol-unselectable.ol-control.layer-switcher .panel { background-color: rgba(255,255,255,.8); border-radius: 0 0 10px 10px; color: #000; font-size: 12px; margin: 0; opacity: 0; padding: 0 10px 5px 10px; }

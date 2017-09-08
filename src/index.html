@@ -117,9 +117,9 @@
         <p>The Tuna Atlas application allows exploring Tuna fisheries data at regional and global scales. To start, click on 'Browse' to discover data in the Tuna Atlas data catalogue and select one or more datasets. Then, click on 'Query' to perform a query on the selected dataset and display it on the map.</p>
         <p><em>This work has received funding from the European Union's Horizon 2020 research and innovation programme under the BlueBRIDGE project (Grant agreement No 675680).</em></p>
         <p class="partner-logos">
-            <img src="img/bluebridge.png" alt="Bluebridge" class="partner-logo"/>
-            <img src="img/fao.png" alt="UN-FAO" class="partner-logo"/>
-            <img src="img/ird.png" alt="IRD" class="partner-logo"/>
+            <img src="img/partners/bluebridge.png" alt="Bluebridge" class="partner-logo"/>
+            <img src="img/partners/fao.png" alt="UN-FAO" class="partner-logo"/>
+            <img src="img/partners/ird.png" alt="IRD" class="partner-logo"/>
         </p>
     </div>
     <div id="dataDialog">
@@ -157,7 +157,13 @@
         <!-- Select a dataset -->
         <div class="selector-wrapper">
             <div id="datasetSelectorWrapper">
-                <select id="datasetSelector"></select>
+                <select id="datasetSelector" data-placeholder="Select a dataset">
+                    <option></option>
+                </select>
+                <button id="datasetMapper" title="Map it!" class="btn btn-primary btn-sm" style="display:none;"
+                        onclick="app.mapDataset()">
+                    <span class="glyphicon glyphicon-globe"></span>
+                </button>
             </div>
         </div>
         
@@ -169,7 +175,7 @@
             <br /><br />Fetching data structure definition...
           </p>
           <!-- Dynamic query -->
-          
+          <div id="dsd-ui"></div>
         </div>
     </div>
     
