@@ -310,6 +310,8 @@ var app = app || {};
             }
             
             this.updateDatasetSelector();
+            this.removeLayerByProperty(pid, "id");
+            this.map.changed();
 
             return out;
          }
@@ -443,7 +445,7 @@ var app = app || {};
                         var clCode = props[1].children[0].textContent;
                         var clLabel = props[0].children[0].textContent;
                         var labels = props[2].children[0].textContent.split("|");
-                        var clItem = {id: clCode, text: clLabel, alternateText: ((labels.length > 1)? labels[1] : null), codelist: featureAttributeModel.name};
+                        var clItem = {id: clCode, text: clLabel, alternateText: ((labels.length > 1)? labels[1] : null), codelist: featureAttributeModel.code};
                         featureAttributeModel.values.push(clItem);
                     }
                 }
@@ -484,6 +486,22 @@ var app = app || {};
                     //build UI
                     //1. Build codelist (multi-selection) UIs
                     //-------------------------------------------
+                    
+                    var codelistMatcher = function(params, data){
+                        params.term = params.term || '';
+                        if ($.trim(params.term) === '') {
+                          return data;
+                        }  
+                        term = params.term.toUpperCase();
+                        var altText = data.alternateText? data.alternateText : '';
+                        if (data.text.toUpperCase().indexOf(term) > -1  |
+                            data.id.toUpperCase().indexOf(term) > -1    |
+                            altText.toUpperCase().indexOf(term) > -1    ) {
+                            return data;
+                        }
+                        return null;
+                    }
+                    
                     $("#dsd-ui").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Fishery dimensions</label></p></div>');
                     for(var i=0;i<this_.selected_dsd.dsd.length;i++){
                         var dsd_component = this_.selected_dsd.dsd[i];
@@ -518,28 +536,31 @@ var app = app || {};
                                   return $item;
                                 };
                                 var dsd_component_placeholder = 'Add a ' + dsd_component.name;
+                                
                                 $("#" + dsd_component_id).select2({
                                     theme: 'classic',
                                     allowClear: true,
                                     placeholder: dsd_component_placeholder,
                                     data: dsd_component.values,
                                     templateResult: formatItem,
-                                    templateSelection: formatItem
+                                    templateSelection: formatItem,
+                                    matcher: codelistMatcher
                                 });
                                 
                             }
                         }
                     }
                     
+                    //for time dimension
+                    var year_start = parseInt(this_.selected_dsd.dataset.time_start.substring(0,4));
+                    var year_end = parseInt(this_.selected_dsd.dataset.time_end.substring(0,4));
+                    
                     //2. Time start/end slider or datepickers
                     //-----------------------------------------
                     var dsd_time_dimensions = ["time_start", "time_end"];
-                    var timeDimensions = this_.selected_dsd.dsd.filter(function(item){if(dsd_time_dimensions.indexOf(item.name) != -1) return item});
+                    var timeDimensions = this_.selected_dsd.dsd.filter(function(item){if(dsd_time_dimensions.indexOf(item.code) != -1) return item});
                     if(timeDimensions.length == 2){
                         var timeWidget = this_.ui_options.time? this_.ui_options.time : 'slider';
-                        
-                        var year_start = parseInt(this_.selected_dsd.dataset.time_start.substring(0,4));
-                        var year_end = parseInt(this_.selected_dsd.dataset.time_end.substring(0,4));
                         
                         if(timeWidget == "slider"){
                             //id
@@ -660,7 +681,8 @@ var app = app || {};
                         placeholder: dsd_component_placeholder,
                         data: [{id:'sum', text: 'Sum'},{id:'avg', text: 'Average'}],
                         templateResult: formatMethod,
-                        templateSelection: formatMethod
+                        templateSelection: formatMethod,
+                        matcher: codelistMatcher
                     });
                     
                 }
@@ -880,6 +902,7 @@ var app = app || {};
          * @param viewparams
 		 */
 		app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, tiled, cql_filter, viewparams){
+            var this_ = this;
             var layerParams = {
                     'LAYERS' : layer,
                     'VERSION': '1.1.1',
@@ -906,8 +929,9 @@ var app = app || {};
 					serverType : 'geoserver'
 				}),
 				opacity : opacity,
-				visible : visible
+                visible: visible
 			});
+            
 			this.setLegendGraphic(layer);
             layer.id = id;
 			layer.showLegendGraphic = showLegend;
@@ -919,7 +943,34 @@ var app = app || {};
 				layer.overlayGroup = this.constants.MAP_OVERLAY_GROUP_NAMES[mainOverlayGroup];
                	this.layers.overlays[mainOverlayGroup].getLayers().push(layer);
             }
+            return layer;
 		}
+        
+        /**
+		 * Util method to remove a layer by property
+		 * @param layerProperty the property value
+		 * @param by the property 
+		 */
+        app.removeLayerByProperty = function(layerProperty, by){
+            var removed = false;
+			if(!by) byTitle = false;
+			var target = undefined;
+            var layerGroups = this.map.getLayers().getArray();
+			for(var i=0;i<layerGroups.length;i++){
+				var layerGroup = layerGroups[i];
+                var layers = layerGroup.getLayers().getArray();
+                for(var j=0;j<layers.length;j++){
+                    var layer = layers[j];
+                    var condition  = by? (layer.get(by) === layerProperty) : (layer.getSource().getParams()["LAYERS"] === layerProperty);
+                    if(condition){
+                        this.layers.overlays[i-1].getLayers().remove(layer);
+                        removed = true;
+                        break;
+                    }
+                }
+			}
+			return removed;
+        }
         
         /**
          * app.mapDataset
@@ -933,8 +984,9 @@ var app = app || {};
                 //add layer
                 var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
                                     function(item){if(item.ciOnlineResource.linkage.url.indexOf('wms')!=-1) return item
-                               })[0].ciOnlineResource.linkage.url;
-                this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.6, false, null, this_.getViewParams());
+                               })[0].ciOnlineResource.linkage.url;        
+                var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.9, false, null, this_.getViewParams());
+                this_.map.changed();
             }else{
                 //update viewparams
                 layer.getSource().updateParams({'VIEWPARAMS' : this_.getViewParams()});
@@ -948,7 +1000,6 @@ var app = app || {};
 		app.setLegendGraphic = function(lyr) {
 			var source = lyr.getSource();
 			if( source instanceof ol.source.TileWMS | source instanceof ol.source.ImageWMS ){
-                console.log(source);
                 var params = source.getParams();
                 var request = '';
                 request += (source instanceof ol.source.TileWMS? source.getUrls()[0] : source.getUrl()) + '?';
