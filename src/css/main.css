@@ -43,7 +43,8 @@ nav ul li.active { background-color: #0C71B8;}
 .data-dialog .ui-dialog-content, .query-dialog .ui-dialog-content { color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px; padding: .5em .1em}
 .data-dialog .ui-dialog-titlebar, .query-dialog .ui-dialog-titlebar{background-color:#fff; opacity:0.95; color:#000;border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
 
-#dataDialog, #queryDialog {height: 100% !important; font-size: 12px !important;}
+#dataDialog {height: 100% !important; font-size: 12px !important;}
+#queryDialog {height: 92% !important; font-size: 12px !important;}
 
 /** BROWSER **/
 #dataset-selection, #dataset-list { height:70%;}

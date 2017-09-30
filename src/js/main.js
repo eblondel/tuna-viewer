@@ -18,7 +18,7 @@ var app = app || {};
             MAP_ZOOM: 3,
 			MAP_PROJECTION: 'EPSG:4326',
             MAP_OVERLAY_GROUP_NAMES: [{name: "Base overlays"},{name: "Tuna maps"}],
-            OGC_CSW_BASEURL: "https://geonetwork1-tunaatlas.d4science.org/geonetwork/srv/en/csw",
+            OGC_CSW_BASEURL: "https://geonetwork2-tunaatlas.d4science.org/geonetwork/srv/eng/csw",
             OGC_WMS_BASEURL: undefined,
             OGC_WFS_BASEURL: undefined,
             OGC_WFS_BBOX: undefined,
@@ -184,7 +184,7 @@ var app = app || {};
                             
                             if(csw_result.metadata.contentInfo){
                                 csw_result.dsd = csw_result.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
-                                csw_result.dsd = csw_result.dsd.replace("metadata.show","xml.metadata.get");
+                                csw_result.dsd = csw_result.dsd.replace("catalog.search#/metadata/","xml.metadata.get?uuid=");
                                 console.log(csw_result);
                                 datasets.push(csw_result);
                             }
@@ -990,6 +990,7 @@ var app = app || {};
             }else{
                 //update viewparams
                 layer.getSource().updateParams({'VIEWPARAMS' : this_.getViewParams()});
+                this_.map.changed();
             }
         }
 
