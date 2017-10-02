@@ -985,7 +985,7 @@ var app = app || {};
                 var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
                                     function(item){if(item.ciOnlineResource.linkage.url.indexOf('wms')!=-1) return item
                                })[0].ciOnlineResource.linkage.url;        
-                var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.9, false, null, this_.getViewParams());
+                var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.9, true, null, this_.getViewParams());
                 this_.map.changed();
             }else{
                 //update viewparams
