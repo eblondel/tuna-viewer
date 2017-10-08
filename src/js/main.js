@@ -18,7 +18,7 @@ var app = app || {};
             MAP_ZOOM: 3,
 			MAP_PROJECTION: 'EPSG:4326',
             MAP_OVERLAY_GROUP_NAMES: [{name: "Base overlays"},{name: "Tuna maps"}],
-            OGC_CSW_BASEURL: "https://geonetwork2-tunaatlas.d4science.org/geonetwork/srv/eng/csw",
+            OGC_CSW_BASEURL: "https://tunaatlas.d4science.org/geonetwork/srv/eng/csw",
             OGC_WMS_BASEURL: undefined,
             OGC_WFS_BASEURL: undefined,
             OGC_WFS_BBOX: undefined,
@@ -144,6 +144,10 @@ var app = app || {};
                 
                 //base filter
                 var filter =  new Ows4js.Filter().PropertyName(['dc:subject']).isLike('%timeseries%');
+
+		//agency filter
+		var agencyFilter = new Ows4js.Filter().PropertyName(['dc:identifier']).isLike('%IRD%');
+		filter = filter.and(agencyFilter);
                 
                 //free text filter
                 var txt = $("#dataset-search-text").val();
