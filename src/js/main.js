@@ -35,6 +35,16 @@ var app = app || {};
 		//===========================================================================================
 
         /**
+         * rewrite URL
+         */
+        app.rewriteURL = function(url){
+            if(window.origin.startsWith("https")){
+                url = url.replace(/^http:\/\//i, 'https://');
+            }
+            return url;
+        }
+        
+        /**
          * app.ligthenMetadata
          * Ligthens a metadata parsed with ogc-schemas library
          * @param inObj
@@ -189,6 +199,7 @@ var app = app || {};
                             if(csw_result.metadata.contentInfo){
                                 csw_result.dsd = csw_result.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
                                 csw_result.dsd = csw_result.dsd.replace("catalog.search#/metadata/","xml.metadata.get?uuid=");
+                                csw_result.dsd = this_.rewriteURL(csw_result.dsd);
                                 console.log(csw_result);
                                 datasets.push(csw_result);
                             }
@@ -505,8 +516,9 @@ var app = app || {};
                         }
                         return null;
                     }
-                    
-                    $("#dsd-ui").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Fishery dimensions</label></p></div>');
+                    $("#dsd-ui").append('<div id="dsd-ui-row" class="row"></div>');
+                    $("#dsd-ui-row").append('<div id="dsd-ui-col-1" class="col-md-6"></div>');
+                    $("#dsd-ui-col-1").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Fishery dimensions</label></p></div>');
                     for(var i=0;i<this_.selected_dsd.dsd.length;i++){
                         var dsd_component = this_.selected_dsd.dsd[i];
                         if(dsd_component.sdmxType == "Dimension"){
@@ -515,7 +527,7 @@ var app = app || {};
                                 var dsd_component_id = "dsd-ui-dimension-" + dsd_component.code;
                                 
                                 //html
-                                $("#dsd-ui").append('<select id = "'+dsd_component_id+'" multiple="multiple" class="dsd-ui-dimension dsd-ui-dimension-codelist"></select>');
+                                $("#dsd-ui-col-1").append('<select id = "'+dsd_component_id+'" multiple="multiple" class="dsd-ui-dimension dsd-ui-dimension-codelist"></select>');
                                 
                                 //jquery widget
                                 var formatItem = function(item) {
@@ -559,6 +571,8 @@ var app = app || {};
                     var year_start = parseInt(this_.selected_dsd.dataset.time_start.substring(0,4));
                     var year_end = parseInt(this_.selected_dsd.dataset.time_end.substring(0,4));
                     
+                    $("#dsd-ui-row").append('<div id="dsd-ui-col-2" class="col-md-6"></div>');
+                    
                     //2. Time start/end slider or datepickers
                     //-----------------------------------------
                     var dsd_time_dimensions = ["time_start", "time_end"];
@@ -572,12 +586,12 @@ var app = app || {};
                             var dsd_component_id_range = dsd_component_id + "-range";
                             
                             //html
-                            var dsd_component_time_html = '<br><div class="dsd-ui-dimension dsd-ui-dimension-time">' +
+                            var dsd_component_time_html = '<div class="dsd-ui-dimension dsd-ui-dimension-time">' +
                             '<p style="margin:0;"><label for="'+dsd_component_id_range+'">Temporal extent</label>' +
                             '<input type="text" id="'+dsd_component_id_range+'" readonly style="margin-left:5px; border:0; color:#f6931f; font-weight:bold;"></p>' +
                             '<div id="'+dsd_component_id+'"></div>' +
                             '</div>';
-                            $("#dsd-ui").append(dsd_component_time_html);
+                            $("#dsd-ui-col-2").append(dsd_component_time_html);
                             
                             //jquery widget
                             $("#"+dsd_component_id).slider({
@@ -590,7 +604,7 @@ var app = app || {};
                             $("#"+dsd_component_id_range).val($("#"+dsd_component_id).slider( "values", 0 ) + " - " +  $("#"+dsd_component_id).slider( "values", 1 ));
                         
                         }else if(timeWidget == "datepicker"){
-                            $("#dsd-ui").append('<br><div class="dsd-ui-dimension dsd-ui-dimension-time"><p style="margin:0;"><label>Temporal extent</label></p>');
+                            $("#dsd-ui-col-2").append('<br><div class="dsd-ui-dimension dsd-ui-dimension-time"><p style="margin:0;"><label>Temporal extent</label></p>');
                             for(var i=0;i<dsd_time_dimensions.length;i++){
                                 var dsd_time_dimension = dsd_time_dimensions[i];
                                 //id
@@ -598,7 +612,7 @@ var app = app || {};
                                 //html
                                 var prefix = dsd_time_dimension == "time_start"? "Start" : "End";
                                 var dsd_component_time_html =  prefix+' date: <input type="text" id="'+dsd_component_id+'" class="dsd-ui-dimension-datepicker">'
-                                $("#dsd-ui").append(dsd_component_time_html);
+                                $("#dsd-ui-col-2").append(dsd_component_time_html);
                                 
                                 //jquery widget
                                 var defaultDate = dsd_time_dimension == "time_start"? new Date(year_start, 1 - 1, 1) : new Date(year_end, 1 - 1, 1)
@@ -611,7 +625,7 @@ var app = app || {};
                                     maxDate: new Date(year_end, 1 - 1, 1)
                                 });
                             }
-                            $("#dsd-ui").append('</p></div>');
+                            $("#dsd-ui-col-2").append('</p></div>');
                         }
                     }
                     
@@ -625,7 +639,7 @@ var app = app || {};
                         
                         if(extra_time_dimensions.indexOf(dsd_component.code) != -1){
                             //html
-                            $("#dsd-ui").append('<select id = "'+dsd_component_id+'" multiple="multiple" class="dsd-ui-dimension dsd-ui-dimension-codelist"></select>');
+                            $("#dsd-ui-col-2").append('<select id = "'+dsd_component_id+'" multiple="multiple" class="dsd-ui-dimension dsd-ui-dimension-codelist"></select>');
                             //jquery widget
                             var formatItem = function(item) {
                               if (!item.id) { return item.text; }
@@ -667,8 +681,8 @@ var app = app || {};
                     //id
                     var dsd_component_id = "dsd-ui-dimension-aggregation_method";
                     //html
-                     $("#dsd-ui").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Aggregation method</label></p></div>');
-                    $("#dsd-ui").append('<select id = "'+dsd_component_id+'" class="dsd-ui-dimension"></select>');
+                     $("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Aggregation method</label></p></div>');
+                    $("#dsd-ui-col-2").append('<select id = "'+dsd_component_id+'" class="dsd-ui-dimension"></select>');
                     
                     //jquery widget
                     var formatMethod = function(item) {
@@ -688,6 +702,29 @@ var app = app || {};
                         templateSelection: formatMethod,
                         matcher: codelistMatcher
                     });
+                    
+                    //Query and mapbutton
+                    $("#dsd-ui-col-2").append('<br><br>');
+                    $("#dsd-ui-col-2").append('<button id="datasetMapper" style="width:90%;" title="Query & Map!" class="btn btn-primary" onclick="app.mapDataset()">Query & Map</button>');
+                    
+                    //download buttons
+                    $("#dsd-ui-col-2").append('<br>');
+                    $("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Download?</label></p></div>');
+                    $("#dsd-ui-col-2").append('<div id="dsd-ui-buttons" style="margin: 0 auto;width: 90%;text-align: center !important;"><p style="margin:0;"></div>');
+                    var button_csv_aggregated = '<button id="dsd-ui-button-csv1" type="button" class="btn data-action-button data-csv-agg" title="Download aggregated data (CSV)" onclick="app.downloadDatasetCSV(true)"></button>';
+                    $("#dsd-ui-buttons").append(button_csv_aggregated);
+                    var button_csv_raw = '<button type="button" id="dsd-ui-button-csv2" class="btn data-action-button data-csv-raw" title="Download raw data (CSV)" onclick="app.downloadDatasetCSV(false)"></button>';
+                    $("#dsd-ui-buttons").append(button_csv_raw);
+                    
+                    var layerName = this_.selected_dsd.pid + "_aggregated";
+                    var layer = app.getLayerByProperty(this_.selected_dsd.pid, 'id');
+                    if(layer){
+                        $('#dsd-ui-button-csv1').prop('disabled', false);
+                        $('#dsd-ui-button-csv2').prop('disabled', false);
+                    }else{
+                        $('#dsd-ui-button-csv1').prop('disabled', true);
+                        $('#dsd-ui-button-csv2').prop('disabled', true);
+                    }
                     
                 }
             });
@@ -981,8 +1018,11 @@ var app = app || {};
          */
         app.mapDataset = function(){
             var this_ = this;
-            var layerName = this_.selected_dsd.pid + "_aggregated";
             
+            $('#dsd-ui-button-csv1').prop('disabled', false);
+            $('#dsd-ui-button-csv2').prop('disabled', false);
+            
+            var layerName = this_.selected_dsd.pid + "_aggregated";
             var layer = app.getLayerByProperty(this_.selected_dsd.pid, 'id')
             if(!layer){
                 //add layer
@@ -997,6 +1037,26 @@ var app = app || {};
                 this_.map.changed();
             }
         }
+        
+        /**
+         * app.downloadDatasetCSV
+         * @param aggregated true if aggregated, false otherwise
+         */
+         app.downloadDatasetCSV = function(aggregated){
+            var this_ = this;
+            var layerName = this_.selected_dsd.pid;
+            if(aggregated) layerName += "_aggregated";
+            console.log(layerName);
+            var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
+               function(item){
+                var filter = item.ciOnlineResource.linkage.url.indexOf('WFS')!=-1
+                             && item.ciOnlineResource.linkage.url.indexOf(layerName) !=-1;
+                if(filter) return item;
+               }
+            )[0].ciOnlineResource.linkage.url;
+            layerUrl += "&VIEWPARAMS=" + this_.getViewParams();
+            window.open(layerUrl);
+         }
 
 		/**
 		 * Set legend graphic
