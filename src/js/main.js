@@ -11,10 +11,20 @@ var app = app || {};
 (function ($) {
 	$(document).ready(function(){
 
+
+	//polyfills
+	//===========================================================================================
+	if (!String.prototype.startsWith) {
+  	    String.prototype.startsWith = function(searchString, position) {
+    		position = position || 0;
+    		return this.indexOf(searchString, position) === position;
+  	    };
+	}
+
 		
-		//constants
-		//===========================================================================================
-		app.constants = {
+	//constants
+	//===========================================================================================
+	app.constants = {
             MAP_ZOOM: 3,
 			MAP_PROJECTION: 'EPSG:4326',
             MAP_OVERLAY_GROUP_NAMES: [{name: "Base overlays"},{name: "Tuna maps"}],
@@ -26,19 +36,19 @@ var app = app || {};
 		}
         
         //UI options
-		//===========================================================================================
-		app.ui_options = {
+	//===========================================================================================
+	app.ui_options = {
             time: 'slider' // or 'datepicker' 
         }
         
-		//Utils
-		//===========================================================================================
+	//Utils
+	//===========================================================================================
 
         /**
          * rewrite URL
          */
         app.rewriteURL = function(url){
-            if(window.origin.startsWith("https")){
+            if(window.location.origin.startsWith("https")){
                 url = url.replace(/^http:\/\//i, 'https://');
             }
             return url;
@@ -58,26 +68,31 @@ var app = app || {};
                    newObj.push(newObjItem);
                 }
                 obj = newObj;
+		
             }else{
+		
                 if(typeof obj === 'object'){
-                
                     if (obj['TYPE_NAME']){
                         delete obj['TYPE_NAME'];
                     };
+
                     if(typeof obj.name != "undefined"){
                       if(typeof obj.name.CLASS_NAME != "undefined"){
                         if(obj.name.CLASS_NAME == 'Jsonix.XML.QName'){
-                            obj = this.lightenMetadata(obj.value);
+                            obj = this.lightenMetadata(obj.value);  
                         }
                       }
                     }
-                    var keys = Object.keys(obj);
-                    for(var i=0;i<keys.length;i++) {
-                      var p = keys[i];
-                      if(["characterString", "integer", "real", "decimal", "_boolean"].indexOf(p) != -1){
-                        obj = this.lightenMetadata(obj[p]);
-                      }else{
-                        obj[p] = this.lightenMetadata(obj[p]);
+  
+	            if(typeof obj === 'object'){	
+                      var keys = Object.keys(obj);
+                      for(var i=0;i<keys.length;i++) {
+                        var p = keys[i];
+                        if(["characterString", "integer", "real", "decimal", "_boolean"].indexOf(p) != -1){
+                          obj = this.lightenMetadata(obj[p]);
+                        }else{
+                          obj[p] = this.lightenMetadata(obj[p]);
+                        }
                       }
                     }
                  
@@ -86,8 +101,8 @@ var app = app || {};
             return obj;
         }
         
-		// ISO/OGC metadata management
-		//==========================================================================================
+	// ISO/OGC metadata management
+	//==========================================================================================
 		
         /**
          * initDataCatalogue
@@ -176,6 +191,7 @@ var app = app || {};
                 
                 var outputSchema = 'http://www.isotc211.org/2005/gmd';
                 this.csw.GetRecords(1, maxNb, filter, outputSchema).then(function(result){
+
                     var datasets = new Array();
                     if(result.value.searchResults.numberOfRecordsMatched > 0){                 
                         var csw_results = result.value.searchResults.any;
@@ -183,26 +199,28 @@ var app = app || {};
                         //post-process results
                         for(var i=0;i<csw_results.length;i++){
                             var csw_result = csw_results[i];    
-                            
+
                             //result object
-                            csw_result.metadata = this_.lightenMetadata(csw_result.value);
-                            delete csw_result.value;
-                            csw_result.pid = csw_result.metadata.fileIdentifier;
-                            csw_result.title = csw_result.metadata.identificationInfo[0].abstractMDIdentification.citation.ciCitation.title;
-                            csw_result.title_tooltip = csw_result.title;
-                            csw_result.graphic_overview = csw_result.metadata.identificationInfo[0].abstractMDIdentification.graphicOverview[0].mdBrowseGraphic.fileName;
-                            csw_result._abstract = csw_result.metadata.identificationInfo[0].abstractMDIdentification._abstract;                           
-                            var temporalExtent = csw_result.metadata.identificationInfo[0].abstractMDIdentification.extent[0].exExtent.temporalElement[0].exTemporalExtent.extent.abstractTimePrimitive;
-                            csw_result.time_start = temporalExtent.beginPosition.value[0];
-                            csw_result.time_end = temporalExtent.endPosition.value[0];
+			    var md_entry = new Object();
+                            md_entry.metadata = this_.lightenMetadata(csw_result.value);
+			    
+                            //delete csw_result.value;
+                            md_entry.pid = md_entry.metadata.fileIdentifier;
+                            md_entry.title = md_entry.metadata.identificationInfo[0].abstractMDIdentification.citation.ciCitation.title;
+                            md_entry.title_tooltip = md_entry.title;
+                            md_entry.graphic_overview = md_entry.metadata.identificationInfo[0].abstractMDIdentification.graphicOverview[0].mdBrowseGraphic.fileName;
+                            md_entry._abstract = md_entry.metadata.identificationInfo[0].abstractMDIdentification._abstract;                           
+                            var temporalExtent = md_entry.metadata.identificationInfo[0].abstractMDIdentification.extent[0].exExtent.temporalElement[0].exTemporalExtent.extent.abstractTimePrimitive;
+                            md_entry.time_start = temporalExtent.beginPosition.value[0];
+                            md_entry.time_end = temporalExtent.endPosition.value[0];
                             
-                            if(csw_result.metadata.contentInfo){
-                                csw_result.dsd = csw_result.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
-                                csw_result.dsd = csw_result.dsd.replace("catalog.search#/metadata/","xml.metadata.get?uuid=");
-                                csw_result.dsd = this_.rewriteURL(csw_result.dsd);
-                                console.log(csw_result);
-                                datasets.push(csw_result);
+                            if(md_entry.metadata.contentInfo){
+                                md_entry.dsd = md_entry.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
+				md_entry.dsd = md_entry.dsd.replace("catalog.search#/metadata/","xml.metadata.get?uuid=");
+                                md_entry.dsd = this_.rewriteURL(md_entry.dsd);
+                                datasets.push(md_entry);
                             }
+			    
                         }                       
                     }
                       
@@ -428,38 +446,39 @@ var app = app || {};
           * @returns a DSD json object
           */
          app.parseDSD = function(response){
-            console.log(response);
+
             //artisanal parsing of feature catalog XML
             //TODO keep investigating ogc-schemas extension for gfc.xsd with jsonix!!!!
             var dsd = new Array();
             //get feature types
-            var featureTypes = $(response.children[0].children).filter(function(idx,item){if(item.nodeName == "gfc:featureType") return item;});
+            var featureTypes = $(response.childNodes[0].childNodes).filter(function(idx,item){if(item.nodeName == "gfc:featureType") return item;});
+	    
             var ft = featureTypes[1];
             //get carrier of characteristics
-            var characteristics = $(ft.children[0].children).filter(function(idx,item){ if(item.nodeName == "gfc:carrierOfCharacteristics") return item;});
+            var characteristics = $(ft.childNodes[1].childNodes).filter(function(idx,item){ if(item.nodeName == "gfc:carrierOfCharacteristics") return item;});
             for(var i=0;i<characteristics.length;i++){
                 var characteristic = characteristics[i];
-                var featureAttribute = characteristic.children[0];
-                var featureAttributePrim = $(featureTypes[0].children[0].children).filter(function(idx,item){ if(item.nodeName == "gfc:carrierOfCharacteristics") return item;})[i].children[0];
+                var featureAttribute = characteristic.childNodes[1];
+                var featureAttributePrim = $(featureTypes[0].childNodes[1].childNodes).filter(function(idx,item){ if(item.nodeName == "gfc:carrierOfCharacteristics") return item;})[i].childNodes[1];
                 //featureAttributeModel
                 var featureAttributeModel = {
-                    name : $(featureAttribute.children).filter(function(i,item){if(item.nodeName == "gfc:memberName") return item;})[0].children[0].textContent,
-                    definition : $(featureAttribute.children).filter(function(i,item){if(item.nodeName == "gfc:definition") return item;})[0].children[0].textContent,
-                    code: $(featureAttribute.children).filter(function(i,item){if(item.nodeName == "gfc:code") return item;})[0].children[0].textContent,
-                    primitiveType: $(featureAttributePrim.children).filter(function(i,item){if(item.nodeName == "gfc:valueType") return item;})[0].children[0].children[0].children[0].textContent,
-                    sdmxType: $(featureAttribute.children).filter(function(i,item){if(item.nodeName == "gfc:valueType") return item;})[0].children[0].children[0].children[0].textContent,
+                    name : $(featureAttribute.childNodes).filter(function(i,item){if(item.nodeName == "gfc:memberName") return item;})[0].childNodes[1].textContent,
+                    definition : $(featureAttribute.childNodes).filter(function(i,item){if(item.nodeName == "gfc:definition") return item;})[0].childNodes[1].textContent,
+                    code: $(featureAttribute.childNodes).filter(function(i,item){if(item.nodeName == "gfc:code") return item;})[0].childNodes[1].textContent,
+                    primitiveType: $(featureAttributePrim.childNodes).filter(function(i,item){if(item.nodeName == "gfc:valueType") return item;})[0].childNodes[1].childNodes[1].childNodes[1].textContent,
+                    sdmxType: $(featureAttribute.childNodes).filter(function(i,item){if(item.nodeName == "gfc:valueType") return item;})[0].childNodes[1].childNodes[1].childNodes[1].textContent,
                     values: null
                 }
                 //values
-                var listedValues = $(featureAttribute.children).filter(function(i,item){if(item.nodeName == "gfc:listedValue") return item;});
+                var listedValues = $(featureAttribute.childNodes).filter(function(i,item){if(item.nodeName == "gfc:listedValue") return item;});
                 if(listedValues.length > 0){
                     featureAttributeModel.values = new Array();
                     for(var j=0;j<listedValues.length;j++){
                         var listedValue = listedValues[j];
-                        var props = listedValue.children[0].children;
-                        var clCode = props[1].children[0].textContent;
-                        var clLabel = props[0].children[0].textContent;
-                        var labels = props[2].children[0].textContent.split("|");
+                        var props = listedValue.childNodes[1].childNodes;
+                        var clCode = props[3].childNodes[1].textContent;
+                        var clLabel = props[1].childNodes[1].textContent;
+                        var labels = props[5].childNodes[1].textContent.split("|");
                         var clItem = {id: clCode, text: clLabel, alternateText: ((labels.length > 1)? labels[1] : null), codelist: featureAttributeModel.code};
                         featureAttributeModel.values.push(clItem);
                     }
@@ -468,8 +487,7 @@ var app = app || {};
                 dsd.push(featureAttributeModel);
             }
             return dsd;
-         }
-         
+         }         
          /**
           * app.getDSD
           * @param pid
@@ -1046,7 +1064,7 @@ var app = app || {};
             var this_ = this;
             var layerName = this_.selected_dsd.pid;
             if(aggregated) layerName += "_aggregated";
-            console.log(layerName);
+            
             var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
                function(item){
                 var filter = item.ciOnlineResource.linkage.url.indexOf('WFS')!=-1
