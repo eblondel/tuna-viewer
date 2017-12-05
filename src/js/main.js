@@ -186,7 +186,7 @@ var app = app || {};
                 //spatial filter
                 if(bbox){
                     console.log(bbox);
-                    filter = filter.and(new Ows4js.Filter().BBOX(bbox[0], bbox[1], bbox[2], bbox[3], 'urn:x-ogc:def:crs:EPSG:6.11:4326'));
+                    filter = filter.and(new Ows4js.Filter().BBOX(bbox[1], bbox[0], bbox[3], bbox[2], 'urn:x-ogc:def:crs:EPSG:6.11:4326'));
                 }
                 
                 var outputSchema = 'http://www.isotc211.org/2005/gmd';
