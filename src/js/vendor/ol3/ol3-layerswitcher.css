@@ -52,6 +52,7 @@
 
 .layer-switcher-layergroup > label {
     font-weight: bold;
+    display: inline;	
 }
 
 .layer-switcher-layerinfo {

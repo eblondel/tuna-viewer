@@ -67,7 +67,13 @@ nav ul li.active { background-color: #0C71B8;}
 .loader { text-align:center; display:none; position: absolute; margin: 30% 0; width: 100%;}
 .loader img { .hwa; width: 48px; height: 48px;}
 .graphic_overview {background: url(../img/loading.gif);background-repeat: no-repeat !important;background-size: 48px 48px !important; background-position: center !important;}
-.dataset-button{ font-size: 80%; position: absolute; top: 0px; right: 0px; padding: 3px 6px !important;}
+.dataset-button { font-size: 80%; position: absolute; top: 0px; right: 0px; padding: 3px 6px !important;}
+.dataset-button-add {color:#5cb85c;border-color:#5cb85c;background-color:#fff;}
+.dataset-button-add:disabled {color:#5cb85c !important;border-color:#5cb85c !important;background-color:#fff !important;opacity:0.5;}
+.dataset-button-add:hover {color:#fff;background-color:#5cb85c;}
+.dataset-button-remove {color:#c9302c;border-color:#c9302c;background-color:#fff;}
+.dataset-button-remove:disabled {color:#c9302c !important;border-color:#c9302c !important;background-color:#fff !important;opacity:0.5;}
+.dataset-button-remove:hover {color:#fff;background-color:#c9302c;}
 
 /** QUERY **/
 #dsd-ui { text-align: center; }
