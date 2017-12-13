@@ -35,11 +35,14 @@ var app = app || {};
             SEARCH_MAX_ITEMS_NUMBER: 50
 		}
         
-        //UI options
+	//UI options
 	//===========================================================================================
 	app.ui_options = {
-            time: 'slider' // or 'datepicker' 
-        }
+	time: 'slider',
+		dynamics: {
+			styling: false
+		}
+	}
         
 	//Utils
 	//===========================================================================================
@@ -100,6 +103,47 @@ var app = app || {};
             }
             return obj;
         }
+
+	/**
+	 * GetAllUrlParams util function to get URL param valus
+	 * Here the primary use is to be able to grab a security token that would be
+	 * passed from within a i-Marine VRE portlet
+	 * @param url
+	 * @returns an object with all parameter values
+	 */
+	app.getAllUrlParams = function(url) {
+		var queryString = url ? url.split('?')[1] : window.location.search.slice(1);
+
+		var obj = {};
+		if (queryString) {
+			queryString = queryString.split('#')[0];
+			var arr = queryString.split('&');
+			for (var i=0; i<arr.length; i++) {
+			  var a = arr[i].split('=');
+			  var paramNum = undefined;
+			  var paramName = a[0].replace(/\[\d*\]/, function(v) {
+				paramNum = v.slice(1,-1);
+				return '';
+			  });
+			  var paramValue = typeof(a[1])==='undefined' ? true : a[1];
+
+			  if (obj[paramName]) {
+				if (typeof obj[paramName] === 'string') {
+				  obj[paramName] = [obj[paramName]];
+				}
+				if (typeof paramNum === 'undefined') {
+				  obj[paramName].push(paramValue);
+				}else {
+				  obj[paramName][paramNum] = paramValue;
+				}
+			  }else {
+				obj[paramName] = paramValue;
+			  }
+			}
+		}
+		return obj;
+	}
+
         
 	// ISO/OGC metadata management
 	//==========================================================================================
@@ -947,20 +991,23 @@ var app = app || {};
             });
             
             return map;
-		}
+	}
         
         /**
-		 * Adds layer
-		 * @param main (true/false)
-		 * @param mainOverlayGroup
-		 * @param id
+	 * Adds layer
+	 * @param main (true/false)
+	 * @param mainOverlayGroup
+	 * @param id
          * @param title
          * @param wmsUrl
          * @param layer
        	 * @param cql_filter
          * @param viewparams
-		 */
-		app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, tiled, cql_filter, viewparams){
+	 * @param envparams
+	 * @param style
+	 */
+	app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, tiled,
+				cql_filter, viewparams, envparams, style){
             var this_ = this;
             var layerParams = {
                     'LAYERS' : layer,
@@ -978,43 +1025,45 @@ var app = app || {};
             
             if(cql_filter){ layerParams['CQL_FILTER'] = cql_filter; }
             if(viewparams){ layerParams['VIEWPARAMS'] = viewparams; }
-			var layer = new olLayerClass({
-				id : id,
-				title : title,
-				source : new olSourceClass({
-					url : wmsUrl,
-					params : layerParams,
-					wrapX: true,
-					serverType : 'geoserver'
-				}),
-				opacity : opacity,
+	    if(envparams){ layerParams['env'] = envparams; }
+	    if(style) layerParams['STYLES'] = style;
+	    var layer = new olLayerClass({
+		id : id,
+		title : title,
+		source : new olSourceClass({
+			url : wmsUrl,
+			params : layerParams,
+			wrapX: true,
+			serverType : 'geoserver'
+		}),
+		opacity : opacity,
                 visible: visible
-			});
+	    });
             
-			this.setLegendGraphic(layer);
+	    this.setLegendGraphic(layer);
             layer.id = id;
-			layer.showLegendGraphic = showLegend;
+	    layer.showLegendGraphic = showLegend;
 			
             if(main){
-				if(mainOverlayGroup > this.layers.overlays.length-1){
-					alert("Overlay group with index " + mainOverlayGroup + " doesn't exist");
-				}
-				layer.overlayGroup = this.constants.MAP_OVERLAY_GROUP_NAMES[mainOverlayGroup];
+		if(mainOverlayGroup > this.layers.overlays.length-1){
+			alert("Overlay group with index " + mainOverlayGroup + " doesn't exist");
+		}
+		layer.overlayGroup = this.constants.MAP_OVERLAY_GROUP_NAMES[mainOverlayGroup];
                	this.layers.overlays[mainOverlayGroup].getLayers().push(layer);
             }
             return layer;
-		}
+	}
         
         /**
-		 * Util method to remove a layer by property
-		 * @param layerProperty the property value
-		 * @param by the property 
-		 */
+	 * Util method to remove a layer by property
+	 * @param layerProperty the property value
+	 * @param by the property 
+	 */
         app.removeLayerByProperty = function(layerProperty, by){
             var removed = false;
-			if(!by) byTitle = false;
-			var target = undefined;
-            var layerGroups = this.map.getLayers().getArray();
+		if(!by) byTitle = false;
+		var target = undefined;
+            	var layerGroups = this.map.getLayers().getArray();
 			for(var i=0;i<layerGroups.length;i++){
 				var layerGroup = layerGroups[i];
                 var layers = layerGroup.getLayers().getArray();
@@ -1027,97 +1076,171 @@ var app = app || {};
                         break;
                     }
                 }
-			}
-			return removed;
+		}
+		return removed;
         }
         
+	/**
+	 * app.getDatasetMaxValue
+	 * @param viewparams
+	 * @returns a JQuery promise
+	 */
+	app.getDatasetMaxValue = function(viewparams){
+	    var maxValueRequest = this.getDatasetWFSLink(true, viewparams, "GML2") + "&sortBy=value+D&maxFeatures=1";
+	    console.log(maxValueRequest);
+	    var deferred = $.Deferred();
+	    $.ajax({
+                url: maxValueRequest,
+                contentType: 'application/xml',
+                type: 'GET',
+                success: function(response){
+			var maxValue = NaN;
+			var children = response.childNodes[0].childNodes;
+			if(children.length > 1) maxValue = parseFloat(children[1].childNodes[0].childNodes[1].textContent);
+			deferred.resolve(maxValue);
+		},
+		error: function(error){
+			console.log(error);
+			deferred.reject(error);
+		}
+	    });
+	    return deferred.promise();
+	}
+
         /**
          * app.mapDataset
          */
         app.mapDataset = function(){
             var this_ = this;
             
+	    //dynamic vs. static
+	    var dynamicStyle = this_.getAllUrlParams().dynamicStyle;
+	    if(dynamicStyle) this_.ui_options.dynamics.styling = dynamicStyle;
+
+	    //actions o download buttons
             $('#dsd-ui-button-csv1').prop('disabled', false);
             $('#dsd-ui-button-csv2').prop('disabled', false);
-            
+
+	    //proceed with map
             var layerName = this_.selected_dsd.pid + "_aggregated";
+	    var layerStyle = undefined;
             var layer = app.getLayerByProperty(this_.selected_dsd.pid, 'id')
+	    var viewparams = this_.getViewParams();
             if(!layer){
-                //add layer
+                //ADD LAYER
                 var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
                                     function(item){if(item.ciOnlineResource.linkage.url.indexOf('wms')!=-1) return item
-                               })[0].ciOnlineResource.linkage.url;        
-                var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title, layerUrl, layerName, true, true, 0.9, true, null, this_.getViewParams());
-                this_.map.changed();
+                               })[0].ciOnlineResource.linkage.url;
+		if(this_.ui_options.dynamics.styling){
+			//dynamic styling
+			layerStyle =  "dyn_poly_regular_equal"
+			this_.getDatasetMaxValue(viewparams).then(function(value){
+				var envparams = "max:" + value;
+				console.log(envparams);
+				var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title,layerUrl, layerName, true, true, 0.9, true, null, viewparams, envparams, layerStyle);
+				this_.map.changed();
+			});
+		}else{
+			//static styling
+			var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title,layerUrl, layerName, true, true, 0.9, true, null, viewparams);
+			this_.map.changed();
+		}	     
             }else{
-                //update viewparams
-                layer.getSource().updateParams({'VIEWPARAMS' : this_.getViewParams()});
-                this_.map.changed();
+		//UPDATE LAYER
+		if(this_.ui_options.dynamics.styling){
+			//dynamic styling
+			this_.getDatasetMaxValue(viewparams).then(function(value){
+				var envparams = "max:" + value;
+				console.log(envparams);
+
+                		//update viewparams 
+                		layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
+				layer.getSource().updateParams({'env' : envparams});
+                		this_.map.changed();
+			});
+		}else{
+			//static styling
+			layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
+                	this_.map.changed();
+		}
             }
         }
-        
+
+
         /**
-         * app.downloadDatasetCSV
+         * app.getDatasetWFSLink
          * @param aggregated true if aggregated, false otherwise
+	 * @param viewparams query viewparams
+   	 * @param format optional format to be specified, by default it will provide a CSV
+	 * @return the WFS layer URL
          */
-         app.downloadDatasetCSV = function(aggregated){
-            var this_ = this;
-            var layerName = this_.selected_dsd.pid;
+	app.getDatasetWFSLink = function(aggregated, viewparams, format){
+            var layerName = this.selected_dsd.pid;
             if(aggregated) layerName += "_aggregated";
-            
-            var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
+            var layerUrl = this.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
                function(item){
                 var filter = item.ciOnlineResource.linkage.url.indexOf('WFS')!=-1
                              && item.ciOnlineResource.linkage.url.indexOf(layerName) !=-1;
                 if(filter) return item;
                }
             )[0].ciOnlineResource.linkage.url;
-            layerUrl += "&VIEWPARAMS=" + this_.getViewParams();
+	    if(viewparams) layerUrl += "&VIEWPARAMS=" + viewparams;
+	    if(format) layerUrl = layerUrl.replace("CSV", format);
+ 	    return layerUrl;	
+	}	
+
+        /**
+         * app.downloadDatasetCSV
+         * @param aggregated true if aggregated, false otherwise
+         */
+         app.downloadDatasetCSV = function(aggregated){
+            var layerUrl = this.getDatasetWFSLink(aggregated, this.getViewParams());
+	    console.log(layerUrl);
             window.open(layerUrl);
          }
 
-		/**
-		 * Set legend graphic
-		 * @param a ol.layer.Layer object
-		 */	 
-		app.setLegendGraphic = function(lyr) {
-			var source = lyr.getSource();
-			if( source instanceof ol.source.TileWMS | source instanceof ol.source.ImageWMS ){
-                var params = source.getParams();
-                var request = '';
-                request += (source instanceof ol.source.TileWMS? source.getUrls()[0] : source.getUrl()) + '?';
-                request += 'VERSION=1.0.0';
-                request += '&REQUEST=GetLegendGraphic';
-                request += '&LAYER=' + params.LAYERS;
-                request += '&STYLE=' + ( (params.STYLES)? params.STYLES : '');
-                request += '&LEGEND_OPTIONS=forcelabels:on;forcerule:True;fontSize:12'; //maybe to let as options
-                request += '&SCALE=139770286.4465912'; //to investigate
-                request += '&FORMAT=image/png';
-                request += '&TRANSPARENT=true';
-                request += '&WIDTH=30';
-                lyr.legendGraphic = request;
-            }
-		}
+	/**
+	 * Set legend graphic
+	 * @param a ol.layer.Layer object
+	 */	 
+	app.setLegendGraphic = function(lyr) {
+		var source = lyr.getSource();
+		if( source instanceof ol.source.TileWMS | source instanceof ol.source.ImageWMS ){
+                	var params = source.getParams();
+                	var request = '';
+                	request += (source instanceof ol.source.TileWMS? source.getUrls()[0] : source.getUrl()) + '?';
+                	request += 'VERSION=1.0.0';
+                	request += '&REQUEST=GetLegendGraphic';
+                	request += '&LAYER=' + params.LAYERS;
+                	request += '&STYLE=' + ( (params.STYLES)? params.STYLES : '');
+                	request += '&LEGEND_OPTIONS=forcelabels:on;forcerule:True;fontSize:12'; //maybe to let as options
+                	request += '&SCALE=139770286.4465912'; //to investigate
+                	request += '&FORMAT=image/png';
+                	request += '&TRANSPARENT=true';
+                	request += '&WIDTH=30';
+                	lyr.legendGraphic = request;
+            	}
+	}
        
     
-		/**
-		 * Util method to get layer by property
-		 * @param layerProperty the property value
-		 * @param by the property 
-		 */
-		app.getLayerByProperty = function(layerProperty, by){
-			if(!by) byTitle = false;
-			var target = undefined;
-			for(var i=0;i<this.map.getLayerGroup().getLayersArray().length;i++){
-				var layer = this.map.getLayerGroup().getLayersArray()[i];
-				var condition  = by? (layer.get(by) === layerProperty) : (layer.getSource().getParams()["LAYERS"] === layerProperty);
-				if(condition){
-					target = this.map.getLayerGroup().getLayersArray()[i];
-					break;
-				}
+	/**
+	 * Util method to get layer by property
+	 * @param layerProperty the property value
+	 * @param by the property 
+	 */
+	app.getLayerByProperty = function(layerProperty, by){
+		if(!by) byTitle = false;
+		var target = undefined;
+		for(var i=0;i<this.map.getLayerGroup().getLayersArray().length;i++){
+			var layer = this.map.getLayerGroup().getLayersArray()[i];
+			var condition  = by? (layer.get(by) === layerProperty) : (layer.getSource().getParams()["LAYERS"] === layerProperty);
+			if(condition){
+				target = this.map.getLayerGroup().getLayersArray()[i];
+				break;
 			}
-			return target;
 		}
+		return target;
+	}
        
         /**
          * app.configureViewer
@@ -1138,9 +1261,9 @@ var app = app || {};
         }
 
         
-		//===========================================================================================
-		//Widgets UIs
-		//===========================================================================================
+	//===========================================================================================
+	//Widgets UIs
+	//===========================================================================================
     
         /**
        * Init dialog
