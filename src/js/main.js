@@ -35,14 +35,14 @@ var app = app || {};
             SEARCH_MAX_ITEMS_NUMBER: 50
 		}
         
-	//UI options
+        //UI options
 	//===========================================================================================
 	app.ui_options = {
-	time: 'slider',
-		dynamics: {
-			styling: false
-		}
-	}
+            time: 'slider',
+	    dynamics: {
+		styling: false
+	    }
+        }
         
 	//Utils
 	//===========================================================================================
@@ -904,9 +904,9 @@ var app = app || {};
                             title : "Oceans imagery",
                             type: 'base',
                             source : new ol.source.TileWMS({
-                                url : "http://www.fao.org/figis/geoserver/fifao/wms",
+                                url : "https://tunaatlas.d4science.org/geoserver/wms",
                                 params : {
-                                        'LAYERS' : 'fifao:OB_LR,fifao:UN_CONTINENT2',
+                                        'LAYERS' : 'tunaatlas:bathymetry,tunaatlas:continent',
                                         'VERSION': '1.1.1',
                                         'FORMAT' : 'image/png',
                                         'TILED'	 : true,
