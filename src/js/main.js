@@ -558,7 +558,6 @@ var app = app || {};
                         dsd: this_.parseDSD(response),
                         query: null
                     };
-                    console.log(this_.selected_dsd);
                     
                     //build UI
                     //1. Build codelist (multi-selection) UIs
@@ -743,7 +742,7 @@ var app = app || {};
                     //id
                     var dsd_component_id = "dsd-ui-dimension-aggregation_method";
                     //html
-                     $("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Aggregation method</label></p></div>');
+                    $("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Aggregation method</label></p></div>');
                     $("#dsd-ui-col-2").append('<select id = "'+dsd_component_id+'" class="dsd-ui-dimension"></select>');
                     
                     //jquery widget
@@ -764,12 +763,41 @@ var app = app || {};
                         templateSelection: formatMethod,
                         matcher: codelistMatcher
                     });
-                    
+
+		    //5. Map classifications
+		    //(enabled only with dynamicStyle for the timebeing)
+                    //------------------------------
+                    if(this_.ui_options.dynamics.styling){
+			//id
+			var map_classtype_id = "map-classtype-selector";
+			//html
+			$("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Map options</label></p></div>');
+                    	$("#dsd-ui-col-2").append('<select id = "'+map_classtype_id+'" class="dsd-ui-dimension"></select>');
+			//jquery widget
+			 var formatClasstype = function(item) {
+                      		if (!item.id) { return item.text; }
+                      		var $item = $('<span class="dsd-ui-item-label" >' + item.text + '</span>');
+                      		return $item;
+                    	};
+                    	var map_classtype_placeholder = 'Select a classification';
+                    	$("#" + map_classtype_id).select2({
+                        	theme: 'classic',
+                        	allowClear: false,
+                        	placeholder: map_classtype_placeholder,
+                        	data: [{id:'ckmeans', text: 'Ckmeans clustering'},{id:'equal', text: 'Equal intervals'},{id:'quantile', text: 'Quantiles'}],
+				templateResult: formatClasstype,
+				templateSelection: formatClasstype
+                    	});
+			$("#" + map_classtype_id).val("ckmeans").trigger("change");
+		    }
+
                     //Query and mapbutton
+                    //------------------------------
                     $("#dsd-ui-col-2").append('<br><br>');
                     $("#dsd-ui-col-2").append('<button id="datasetMapper" style="width:90%;" title="Query & Map!" class="btn btn-primary" onclick="app.mapDataset()">Query & Map</button>');
                     
                     //download buttons
+                    //------------------------------
                     $("#dsd-ui-col-2").append('<br>');
                     $("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Download?</label></p></div>');
                     $("#dsd-ui-col-2").append('<div id="dsd-ui-buttons" style="margin: 0 auto;width: 90%;text-align: center !important;"><p style="margin:0;"></div>');
@@ -841,13 +869,13 @@ var app = app || {};
          }
          
       
-		// Map UI
-		//===========================================================================================
+	// Map UI
+	//===========================================================================================
 		
-		/**
-		 * Inits the map
-		 */
-		app.initMap = function(id, main, extent){
+	/**
+	 * Inits the map
+	 */
+	app.initMap = function(id, main, extent){
         
             var map;
 			var this_ = this;
@@ -941,10 +969,10 @@ var app = app || {};
                 this.defaultMapZoom = defaultMapZoom;
             }     
         
-			//map
+	    //map
             var mapId = id? id : 'map';
-			$("#"+mapId).empty();
-			var map = new ol.Map({
+	    $("#"+mapId).empty();
+		var map = new ol.Map({
                 id: mapId,
                 target : mapId,
                 layers : this_.layers.baseLayers.concat(this_.layers.overlays),
@@ -957,12 +985,12 @@ var app = app || {};
                 controls: [],
                 logo: false
             });
-			map.addControl( new ol.control.LoadingPanel() );
-			map.addControl( new ol.control.Zoom() );
-			map.addControl( new ol.control.ZoomToMaxExtent({
-				extent	: extent? extent : defaultMapExtent,
-				zoom	: defaultMapZoom
-			} ));
+	    map.addControl( new ol.control.LoadingPanel() );
+	    map.addControl( new ol.control.Zoom() );
+	    map.addControl( new ol.control.ZoomToMaxExtent({
+		extent	: extent? extent : defaultMapExtent,
+		zoom	: defaultMapZoom
+	    } ));
             
             if(main){
                 map.addControl( new ol.control.LayerSwitcher({
@@ -1082,12 +1110,12 @@ var app = app || {};
         
 	/**
 	 * app.getDatasetMaxValue
+	 * @Deprecated app.getDatasetValues is used
 	 * @param viewparams
 	 * @returns a JQuery promise
 	 */
 	app.getDatasetMaxValue = function(viewparams){
 	    var maxValueRequest = this.getDatasetWFSLink(true, viewparams, "GML2") + "&sortBy=value+D&maxFeatures=1";
-	    console.log(maxValueRequest);
 	    var deferred = $.Deferred();
 	    $.ajax({
                 url: maxValueRequest,
@@ -1107,25 +1135,103 @@ var app = app || {};
 	    return deferred.promise();
 	}
 
+	/**
+	 * app.getDatasetValues
+	 * @returns a Jquery promise
+	 */
+	app.getDatasetValues = function(viewparams){
+	    var wfsRequest = this.getDatasetWFSLink(true, viewparams, "json") + "&propertyName=value";
+	    var deferred = $.Deferred();
+	    $.ajax({
+                url: wfsRequest,
+                contentType: 'application/json',
+                type: 'GET',
+                success: function(response){
+			var features = response.features;
+			var values = new Array();
+			if(features.length > 0){
+				values = features.map(function(f){return f.properties.value});
+			}			
+			deferred.resolve(values);
+		},
+		error: function(error){
+			console.log(error);
+			deferred.reject(error);
+		}
+	    });
+	    return deferred.promise();
+
+	}
+
+        /**
+         * app.calculateBreaks
+	 * @param values an array of numeric values
+	 * @param classType the type of classification to apply
+	 * @param classNb the number N of class breaks
+	 * @returns an array of N+1 class breaks
+         */
+        app.calculateBreaks = function(values, classType, classNb){
+	    var breaks;
+	    switch(classType){
+		//CKmeans
+		case "ckmeans":
+		    var clusters = ckmeans(values, classNb);
+		    breaks = new Array();
+		    for(var i=0;i<clusters.length;i++){
+			var cluster = clusters[i];
+			breaks.push(min(cluster));
+			if(i==clusters.length-1) breaks.push(max(cluster));
+		    }
+		    break;
+		//Equal intervals
+		case "equal":
+		    breaks = equalIntervalBreaks(values, classNb);
+		    break;
+		//quantiles
+		case "quantile":
+		    var qpt = 1/classNb;
+		    breaks = new Array();
+		    breaks.push(min(values));
+		    for(var i=1;i<=classNb;i++){
+			breaks.push(quantile(values,qpt*i));
+		    }
+		    breaks;					
+	    }
+	    breaks = breaks.map(function(i){return Math.round(i * 100) / 100});
+	    return breaks;
+	}
+
+        /**
+         * app.buildEnvParams
+         */
+        app.buildEnvParams = function(breaks){
+	    var envparams = "";
+	    for(var i=1;i<=breaks.length;i++){
+		envparams += "v"+ i +":"+ breaks[i-1] + ";";
+	    }
+	    return envparams;
+	}
+
         /**
          * app.mapDataset
          */
         app.mapDataset = function(){
             var this_ = this;
-            
-	    //dynamic vs. static
-	    var dynamicStyle = this_.getAllUrlParams().dynamicStyle;
-	    if(dynamicStyle) this_.ui_options.dynamics.styling = dynamicStyle;
 
 	    //actions o download buttons
             $('#dsd-ui-button-csv1').prop('disabled', false);
             $('#dsd-ui-button-csv2').prop('disabled', false);
 
-	    //proceed with map
+	    //layer properties
             var layerName = this_.selected_dsd.pid + "_aggregated";
-	    var layerStyle = undefined;
-            var layer = app.getLayerByProperty(this_.selected_dsd.pid, 'id')
+            var layer = app.getLayerByProperty(this_.selected_dsd.pid, 'id');
 	    var viewparams = this_.getViewParams();
+		
+	    //dynamic styling properties
+	    var classType = $("#map-classtype-selector").select2('val');
+	    var classNb = 5;
+	    var layerStyle =  "dyn_poly_regular_class_" + classNb;
+
             if(!layer){
                 //ADD LAYER
                 var layerUrl = this_.selected_dsd.dataset.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine.filter(
@@ -1133,13 +1239,14 @@ var app = app || {};
                                })[0].ciOnlineResource.linkage.url;
 		if(this_.ui_options.dynamics.styling){
 			//dynamic styling
-			layerStyle =  "dyn_poly_regular_equal"
-			this_.getDatasetMaxValue(viewparams).then(function(value){
-				var envparams = "max:" + value;
-				console.log(envparams);
+			this_.getDatasetValues(viewparams).then(function(values){
+				var breaks = this_.calculateBreaks(values, classType, classNb);
+				var envparams = this_.buildEnvParams(breaks);
 				var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title,layerUrl, layerName, true, true, 0.9, true, null, viewparams, envparams, layerStyle);
-				this_.map.changed();
-			});
+				this_.setLegendGraphic(layer, breaks);	
+				this_.map.changed();				
+			})
+
 		}else{
 			//static styling
 			var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title,layerUrl, layerName, true, true, 0.9, true, null, viewparams);
@@ -1149,13 +1256,15 @@ var app = app || {};
 		//UPDATE LAYER
 		if(this_.ui_options.dynamics.styling){
 			//dynamic styling
-			this_.getDatasetMaxValue(viewparams).then(function(value){
-				var envparams = "max:" + value;
-				console.log(envparams);
+			this_.getDatasetValues(viewparams).then(function(values){
+				//update breaks
+				var breaks = this_.calculateBreaks(values, classType, classNb);
+				var envparams = this_.buildEnvParams(breaks);
 
-                		//update viewparams 
+                		//update viewparams, envparams & legend
                 		layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
 				layer.getSource().updateParams({'env' : envparams});
+				this_.setLegendGraphic(layer, breaks);
                 		this_.map.changed();
 			});
 		}else{
@@ -1195,15 +1304,15 @@ var app = app || {};
          */
          app.downloadDatasetCSV = function(aggregated){
             var layerUrl = this.getDatasetWFSLink(aggregated, this.getViewParams());
-	    console.log(layerUrl);
             window.open(layerUrl);
          }
 
 	/**
 	 * Set legend graphic
 	 * @param a ol.layer.Layer object
+	 * @param breaks an array of break values
 	 */	 
-	app.setLegendGraphic = function(lyr) {
+	app.setLegendGraphic = function(lyr, breaks) {
 		var source = lyr.getSource();
 		if( source instanceof ol.source.TileWMS | source instanceof ol.source.ImageWMS ){
                 	var params = source.getParams();
@@ -1211,14 +1320,45 @@ var app = app || {};
                 	request += (source instanceof ol.source.TileWMS? source.getUrls()[0] : source.getUrl()) + '?';
                 	request += 'VERSION=1.0.0';
                 	request += '&REQUEST=GetLegendGraphic';
-                	request += '&LAYER=' + params.LAYERS;
+                	request += '&LAYER=' + params.LAYERS.split(",")[0];
                 	request += '&STYLE=' + ( (params.STYLES)? params.STYLES : '');
                 	request += '&LEGEND_OPTIONS=forcelabels:on;forcerule:True;fontSize:12'; //maybe to let as options
                 	request += '&SCALE=139770286.4465912'; //to investigate
                 	request += '&FORMAT=image/png';
                 	request += '&TRANSPARENT=true';
                 	request += '&WIDTH=30';
-                	lyr.legendGraphic = request;
+
+			//case of dynamic maps
+		 	if(source.getParams().VIEWPARAMS != "undefined" & this.ui_options.dynamics.styling){
+				var canvas = document.createElement('canvas');
+				document.body.appendChild(canvas);
+				canvas.height = '100';
+				canvas.width = '200';
+				var ctx = canvas.getContext('2d');
+				var palette = new Image();
+				palette.src = request;
+				palette.onload = function() {
+				    //draw color palette
+   				    ctx.drawImage(palette, 0, 0, 32, 100);
+				    //draw break legends
+				    ctx.font = "9pt Arial";
+				    var breakPt = 14;
+				    var breakSpace = 6;
+				    var dx = 36;
+				    var dy = breakPt;
+				    if(breaks){
+				    	for(var i=1;i<breaks.length;i++){
+						var breakLegend = "[ " + breaks[i-1] + " – " + breaks[i];
+						if(i==breaks.length-1){ breakLegend += " ]" }else{ breakLegend += " [" };
+						ctx.fillText(breakLegend, dx, dy);
+						dy = breakPt*(i+1) + breakSpace*i;
+				    	} 
+                                    	lyr.legendGraphic = canvas.toDataURL("image/png");
+				    }
+				};	
+			}else{
+                		lyr.legendGraphic = request;
+			}
             	}
 	}
        
@@ -1371,10 +1511,14 @@ var app = app || {};
             this.closeDialog("queryDialog");
         }
         
-		//===========================================================================================
-		//application init
-		//===========================================================================================
+	//===========================================================================================
+	//application init
+	//===========================================================================================
 		
+	//dynamic vs. static
+	var dynamicStyle = app.getAllUrlParams().dynamicStyle;
+	if(dynamicStyle) app.ui_options.dynamics.styling = dynamicStyle == "true";
+
         //init map
         app.configureViewer();
         
