@@ -768,6 +768,8 @@ var app = app || {};
 		    //(enabled only with dynamicStyle for the timebeing)
                     //------------------------------
                     if(this_.ui_options.dynamics.styling){
+			//Classification type
+			//-------------------
 			//id
 			var map_classtype_id = "map-classtype-selector";
 			//html
@@ -789,6 +791,30 @@ var app = app || {};
 				templateSelection: formatClasstype
                     	});
 			$("#" + map_classtype_id).val("ckmeans").trigger("change");
+
+			//Number of class intervals
+			//-------------------------
+			//id
+			var map_classnb_id = "map-classnb-selector";
+			//html
+                    	$("#dsd-ui-col-2").append('<select id = "'+map_classnb_id+'" class="dsd-ui-dimension"></select>');
+			//jquery widget
+			 var formatClassnb = function(item) {
+                      		if (!item.id) { return item.text; }
+                      		var $item = $('<span class="dsd-ui-item-label" >' + item.text + '</span>');
+                      		return $item;
+                    	};
+                    	var map_classnb_placeholder = 'Select the number of intervals';
+                    	$("#" + map_classnb_id).select2({
+                        	theme: 'classic',
+                        	allowClear: false,
+                        	placeholder: map_classnb_placeholder,
+                        	data: [{id: '4', text: '4'}, {id: '5', text: '5'}],
+				templateResult: formatClassnb,
+				templateSelection: formatClassnb
+                    	});
+			$("#" + map_classnb_id).val("5").trigger("change");
+
 		    }
 
                     //Query and mapbutton
@@ -1229,7 +1255,7 @@ var app = app || {};
 		
 	    //dynamic styling properties
 	    var classType = $("#map-classtype-selector").select2('val');
-	    var classNb = 5;
+	    var classNb = $("#map-classnb-selector").select2('val');
 	    var layerStyle =  "dyn_poly_regular_class_" + classNb;
 
             if(!layer){
@@ -1263,6 +1289,7 @@ var app = app || {};
 
                 		//update viewparams, envparams & legend
                 		layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
+				layer.getSource().updateParams({'STYLES' : layerStyle});
 				layer.getSource().updateParams({'env' : envparams});
 				this_.setLegendGraphic(layer, breaks);
                 		this_.map.changed();
@@ -1344,6 +1371,7 @@ var app = app || {};
 				    ctx.font = "9pt Arial";
 				    var breakPt = 14;
 				    var breakSpace = 6;
+				    if(breaks.length==5) breakSpace = 12;
 				    var dx = 36;
 				    var dy = breakPt;
 				    if(breaks){
