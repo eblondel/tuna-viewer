@@ -216,7 +216,7 @@ var app = app || {};
 
 		//agency filter
 		var agencyFilter = new Ows4js.Filter().PropertyName(['dc:identifier']).isLike('%IRD%');
-		filter = filter.and(agencyFilter);
+		//filter = filter.and(agencyFilter);
                 
                 //free text filter
                 var txt = $("#dataset-search-text").val();
@@ -283,6 +283,7 @@ var app = app || {};
             var this_ = this;
             $($("#dataset-list").find("section")[0]).empty();
             $("#dataset-loader").show();
+	    $("#dataset-count").empty();
          
             this.datasets = new Array();
             if($("#dataset-search-bbox").prop("checked") && !bbox){
@@ -306,6 +307,7 @@ var app = app || {};
                 $("#dataset-loader").hide();
                 this_.datasets = results;
                 var datasetList = new List('dataset-list', options, results);
+		$("#dataset-count").html(this_.datasets.length + " datasets");
                 this_.displayGraphicOverviews();
                 datasetList.on("updated", function(evt){
                     this_.displayGraphicOverviews();
@@ -1421,7 +1423,7 @@ var app = app || {};
             });
             
             //layers of interest
-            this_.addLayer(true, 0, "eez", "Exclusive Economic Zones", "http://geo.vliz.be/geoserver/MarineRegions/wms", "MarinRegions:eez", false, true, 0.6, true);
+            this_.addLayer(true, 0, "eez", "EEZ boundaries", "http://geo.vliz.be/geoserver/MarineRegions/wms", "MarinRegions:eez_boundaries", false, true, 0.6, true);
             this_.addLayer(true, 0, "fsa", "FAO major areas & breakdown", "http://www.fao.org/figis/geoserver/area/wms", "area:FAO_AREAS", false, true, 0.9, true);
             this_.addLayer(true, 0, "grid1x1", "Grid 1x1 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid1x1,tunaatlas:continent", false, true, 0.5, true);
             this_.addLayer(true, 0, "grid5x5", "Grid 5x5 (CWP)", "https://geoserver-tunaatlas.d4science.org/geoserver/tunaatlas/wms", "tunaatlas:grid5x5,tunaatlas:continent", false, true, 0.5, true);
