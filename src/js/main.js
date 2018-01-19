@@ -7,6 +7,7 @@
  */
 
 var app = app || {};
+app.VERSION = "1.0-beta"
 
 (function ($) {
 	$(document).ready(function(){
@@ -38,11 +39,11 @@ var app = app || {};
         //UI options
 	//===========================================================================================
 	app.ui_options = {
-            time: 'slider',
-	    dynamics: {
-		styling: false
-	    }
-        }
+        time: 'slider',
+		dynamics : {
+			styling: true
+		}
+	}
         
 	//Utils
 	//===========================================================================================
@@ -766,59 +767,56 @@ var app = app || {};
                         matcher: codelistMatcher
                     });
 
-		    //5. Map classifications
-		    //(enabled only with dynamicStyle for the timebeing)
-                    //------------------------------
-                    if(this_.ui_options.dynamics.styling){
-			//Classification type
-			//-------------------
-			//id
-			var map_classtype_id = "map-classtype-selector";
-			//html
-			$("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Map options</label></p></div>');
-                    	$("#dsd-ui-col-2").append('<select id = "'+map_classtype_id+'" class="dsd-ui-dimension"></select>');
-			//jquery widget
-			 var formatClasstype = function(item) {
-                      		if (!item.id) { return item.text; }
-                      		var $item = $('<span class="dsd-ui-item-label" >' + item.text + '</span>');
-                      		return $item;
-                    	};
-                    	var map_classtype_placeholder = 'Select a classification';
-                    	$("#" + map_classtype_id).select2({
-                        	theme: 'classic',
-                        	allowClear: false,
-                        	placeholder: map_classtype_placeholder,
-                        	data: [{id:'ckmeans', text: 'Ckmeans clustering'},{id:'equal', text: 'Equal intervals'},{id:'quantile', text: 'Quantiles'}],
-				templateResult: formatClasstype,
-				templateSelection: formatClasstype
-                    	});
-			$("#" + map_classtype_id).val("ckmeans").trigger("change");
+					//5. Map classifications
+					if(this_.ui_options.dynamics.styling){
+						//Classification type
+						//-------------------
+						//id
+						var map_classtype_id = "map-classtype-selector";
+						//html
+						$("#dsd-ui-col-2").append('<div style="margin: 0 auto;margin-top: 10px;width: 90%;text-align: left !important;"><p style="margin:0;"><label>Map options</label></p></div>');
+						$("#dsd-ui-col-2").append('<select id = "'+map_classtype_id+'" class="dsd-ui-dimension"></select>');
+						//jquery widget
+						var formatClasstype = function(item) {
+							if (!item.id) { return item.text; }
+							var $item = $('<span class="dsd-ui-item-label" >' + item.text + '</span>');
+							return $item;
+						};
+						var map_classtype_placeholder = 'Select a classification';
+						$("#" + map_classtype_id).select2({
+							theme: 'classic',
+							allowClear: false,
+							placeholder: map_classtype_placeholder,
+							data: [{id:'ckmeans', text: 'Ckmeans clustering'},{id:'equal', text: 'Equal intervals'},{id:'quantile', text: 'Quantiles'}],
+							templateResult: formatClasstype,
+							templateSelection: formatClasstype
+						});
+						$("#" + map_classtype_id).val("ckmeans").trigger("change");
 
-			//Number of class intervals
-			//-------------------------
-			//id
-			var map_classnb_id = "map-classnb-selector";
-			//html
-                    	$("#dsd-ui-col-2").append('<select id = "'+map_classnb_id+'" class="dsd-ui-dimension"></select>');
-			//jquery widget
-			 var formatClassnb = function(item) {
-                      		if (!item.id) { return item.text; }
-                      		var $item = $('<span class="dsd-ui-item-label" >' + item.text + '</span>');
-                      		return $item;
-                    	};
-                    	var map_classnb_placeholder = 'Select the number of intervals';
-                    	$("#" + map_classnb_id).select2({
-                        	theme: 'classic',
-                        	allowClear: false,
-                        	placeholder: map_classnb_placeholder,
-                        	data: [{id: '4', text: '4'}, {id: '5', text: '5'}],
-				templateResult: formatClassnb,
-				templateSelection: formatClassnb
-                    	});
-			$("#" + map_classnb_id).val("5").trigger("change");
-
-		    }
-
+						//Number of class intervals
+						//-------------------------
+						//id
+						var map_classnb_id = "map-classnb-selector";
+						//html
+						$("#dsd-ui-col-2").append('<select id = "'+map_classnb_id+'" class="dsd-ui-dimension"></select>');
+						//jquery widget
+						var formatClassnb = function(item) {
+							if (!item.id) { return item.text; }
+							var $item = $('<span class="dsd-ui-item-label" >' + item.text + '</span>');
+							return $item;
+						};
+						var map_classnb_placeholder = 'Select the number of intervals';
+						$("#" + map_classnb_id).select2({
+							theme: 'classic',
+							allowClear: false,
+							placeholder: map_classnb_placeholder,
+							data: [{id: '4', text: '4'}, {id: '5', text: '5'}],
+							templateResult: formatClassnb,
+							templateSelection: formatClassnb
+						});
+						$("#" + map_classnb_id).val("5").trigger("change");
+					}
+					
                     //Query and mapbutton
                     //------------------------------
                     $("#dsd-ui-col-2").append('<br><br>');
@@ -1541,13 +1539,13 @@ var app = app || {};
             this.closeDialog("queryDialog");
         }
         
-	//===========================================================================================
-	//application init
-	//===========================================================================================
+		//===========================================================================================
+		//application init
+		//===========================================================================================
 		
-	//dynamic vs. static
-	var dynamicStyle = app.getAllUrlParams().dynamicStyle;
-	if(dynamicStyle) app.ui_options.dynamics.styling = dynamicStyle == "true";
+		//dynamic vs. static
+		var dynamicStyle = app.getAllUrlParams().dynamicStyle;
+		if(dynamicStyle) app.ui_options.dynamics.styling = dynamicStyle == "true";
 
         //init map
         app.configureViewer();
