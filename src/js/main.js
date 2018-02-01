@@ -7,7 +7,7 @@
  */
 
 var app = app || {};
-app.VERSION = "1.0-beta"
+app.VERSION = "1.0-beta";
 
 (function ($) {
 	$(document).ready(function(){
@@ -1197,7 +1197,7 @@ app.VERSION = "1.0-beta"
 	 * @returns an array of N+1 class breaks
          */
         app.calculateBreaks = function(values, classType, classNb){
-	    var breaks;
+	    var breaks =  new Array();
 	    switch(classType){
 		//CKmeans
 		case "ckmeans":
@@ -1371,10 +1371,10 @@ app.VERSION = "1.0-beta"
 				    ctx.font = "9pt Arial";
 				    var breakPt = 14;
 				    var breakSpace = 6;
-				    if(breaks.length==5) breakSpace = 12;
 				    var dx = 36;
 				    var dy = breakPt;
 				    if(breaks){
+					if(breaks.length==5) breakSpace = 12;
 				    	for(var i=1;i<breaks.length;i++){
 						var breakLegend = "[ " + breaks[i-1] + " – " + breaks[i];
 						if(i==breaks.length-1){ breakLegend += " ]" }else{ breakLegend += " [" };
