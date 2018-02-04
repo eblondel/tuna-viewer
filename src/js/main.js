@@ -1472,7 +1472,6 @@ app.VERSION = "1.0-beta";
 		var url = location.href.replace(/#.*$/,'').replace(/\?.*$/,'');
 		if(this.selected_dsd) url += '?dataset=' + this.selected_dsd.pid;
 		document.getElementById('tuna-link').value = url;
-		document.getElementById('tuna-html').value = '<iframe src ="' + url + '" width="800" height="600" frameborder="0" marginheight="0"></iframe>';
 	}
         
 	//===========================================================================================
