@@ -99,7 +99,21 @@
         <!-- map -->
         <div class="page" id="pageMap">
             <div class="content">
+				<!-- Map -->
                 <div id="map"></div>
+				
+				<!-- Link panel -->
+				<div id="linkPanel" class="sidePanel" onmouseover="app.setEmbedLink()">
+					<h4>Link</h4>
+					<blockquote>
+						<div>
+							<label for="tuna-link">Paste the link in email or chat</label>
+							<input id="tuna-link" type="text" readonly="readonly" value="" onclick="this.focus();this.select();" /> 
+						</div>
+					<blockquote>
+				</div>
+				
+				<!-- Selection panel -->
                 <div id="selectionPanel" class="sidePanel">
 					<h4><span class="glyphicon glyphicon-shopping-cart" style="margin-right:6px;"></span>Data selection</h4>
                     <div id="dataset-selection">

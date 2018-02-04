@@ -29,6 +29,7 @@ app.VERSION = "1.0-beta";
             MAP_ZOOM: 3,
 			MAP_PROJECTION: 'EPSG:4326',
             MAP_OVERLAY_GROUP_NAMES: [{name: "Base overlays"},{name: "Tuna maps"}],
+			METADATA_SCHEMA: 'http://www.isotc211.org/2005/gmd',
             OGC_CSW_BASEURL: "https://tunaatlas.d4science.org/geonetwork/srv/eng/csw",
             OGC_WMS_BASEURL: undefined,
             OGC_WFS_BASEURL: undefined,
@@ -198,11 +199,38 @@ app.VERSION = "1.0-beta";
             return this.csw;
         }
         
+		/**
+		 * app.createMetadataEntry
+		 * @param value
+		 */
+		app.createMetadataEntry = function(value){
+			var this_ = this;
+			var md_entry = new Object();
+			md_entry.metadata = this_.lightenMetadata(value);
+
+			//delete csw_result.value;
+			md_entry.pid = md_entry.metadata.fileIdentifier;
+			md_entry.title = md_entry.metadata.identificationInfo[0].abstractMDIdentification.citation.ciCitation.title;
+			md_entry.title_tooltip = md_entry.title;
+			md_entry.graphic_overview = md_entry.metadata.identificationInfo[0].abstractMDIdentification.graphicOverview[0].mdBrowseGraphic.fileName;
+			md_entry._abstract = md_entry.metadata.identificationInfo[0].abstractMDIdentification._abstract;                           
+			var temporalExtent = md_entry.metadata.identificationInfo[0].abstractMDIdentification.extent[0].exExtent.temporalElement[0].exTemporalExtent.extent.abstractTimePrimitive;
+			md_entry.time_start = temporalExtent.beginPosition.value[0];
+			md_entry.time_end = temporalExtent.endPosition.value[0];
+			
+			if(md_entry.metadata.contentInfo){
+				md_entry.dsd = md_entry.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
+				md_entry.dsd = md_entry.dsd.replace("catalog.search#/metadata/","xml.metadata.get?uuid=");
+				md_entry.dsd = this_.rewriteURL(md_entry.dsd);
+			}
+			return md_entry;
+		}
+		
         /**
-         * getDatasets
+         * getDatasetsFromCSW
          * @param maxNb maximum number of records
          */
-        app.getDatasets = function(maxNb, bbox){
+        app.getDatasetsFromCSW = function(maxNb, bbox){
             
             var this_ = this;
             var deferred = $.Deferred();
@@ -215,9 +243,13 @@ app.VERSION = "1.0-beta";
                 //base filter
                 var filter =  new Ows4js.Filter().PropertyName(['dc:subject']).isLike('%timeseries%');
 
-		//agency filter
-		var agencyFilter = new Ows4js.Filter().PropertyName(['dc:identifier']).isLike('%IRD%');
-		//filter = filter.and(agencyFilter);
+				//extent filter (exclude RFMOs)
+				var scopeFilter = new Ows4js.Filter().PropertyName(['dc:identifier']).isLike('%global%');
+				filter = filter.and(scopeFilter);
+				
+				//agency filter
+				//var agencyFilter = new Ows4js.Filter().PropertyName(['dc:identifier']).isLike('%IRD%');
+				//filter = filter.and(agencyFilter);
                 
                 //free text filter
                 var txt = $("#dataset-search-text").val();
@@ -234,8 +266,7 @@ app.VERSION = "1.0-beta";
                     filter = filter.and(new Ows4js.Filter().BBOX(bbox[1], bbox[0], bbox[3], bbox[2], 'urn:x-ogc:def:crs:EPSG:6.11:4326'));
                 }
                 
-                var outputSchema = 'http://www.isotc211.org/2005/gmd';
-                this.csw.GetRecords(1, maxNb, filter, outputSchema).then(function(result){
+                this.csw.GetRecords(1, maxNb, filter, this.constants.METADATA_SCHEMA).then(function(result){
 
                     var datasets = new Array();
                     if(result.value.searchResults.numberOfRecordsMatched > 0){                 
@@ -244,28 +275,10 @@ app.VERSION = "1.0-beta";
                         //post-process results
                         for(var i=0;i<csw_results.length;i++){
                             var csw_result = csw_results[i];    
-
-                            //result object
-			    var md_entry = new Object();
-                            md_entry.metadata = this_.lightenMetadata(csw_result.value);
-			    
-                            //delete csw_result.value;
-                            md_entry.pid = md_entry.metadata.fileIdentifier;
-                            md_entry.title = md_entry.metadata.identificationInfo[0].abstractMDIdentification.citation.ciCitation.title;
-                            md_entry.title_tooltip = md_entry.title;
-                            md_entry.graphic_overview = md_entry.metadata.identificationInfo[0].abstractMDIdentification.graphicOverview[0].mdBrowseGraphic.fileName;
-                            md_entry._abstract = md_entry.metadata.identificationInfo[0].abstractMDIdentification._abstract;                           
-                            var temporalExtent = md_entry.metadata.identificationInfo[0].abstractMDIdentification.extent[0].exExtent.temporalElement[0].exTemporalExtent.extent.abstractTimePrimitive;
-                            md_entry.time_start = temporalExtent.beginPosition.value[0];
-                            md_entry.time_end = temporalExtent.endPosition.value[0];
-                            
-                            if(md_entry.metadata.contentInfo){
-                                md_entry.dsd = md_entry.metadata.contentInfo[0].abstractMDContentInformation.featureCatalogueCitation[0].ciCitation.citedResponsibleParty[0].ciResponsibleParty.contactInfo.ciContact.onlineResource.ciOnlineResource.linkage.url;
-				md_entry.dsd = md_entry.dsd.replace("catalog.search#/metadata/","xml.metadata.get?uuid=");
-                                md_entry.dsd = this_.rewriteURL(md_entry.dsd);
+							var md_entry = this_.createMetadataEntry(csw_result.value);
+							if(md_entry.metadata.contentInfo){
                                 datasets.push(md_entry);
                             }
-			    
                         }                       
                     }
                       
@@ -284,13 +297,13 @@ app.VERSION = "1.0-beta";
             var this_ = this;
             $($("#dataset-list").find("section")[0]).empty();
             $("#dataset-loader").show();
-	    $("#dataset-count").empty();
+			$("#dataset-count").empty();
          
             this.datasets = new Array();
             if($("#dataset-search-bbox").prop("checked") && !bbox){
                 bbox = this.map.getView().calculateExtent(this.map.getSize());
             }
-            this.getDatasets(false, bbox).then(function(results){
+            this.getDatasetsFromCSW(false, bbox).then(function(results){
                 console.log(results);
                 var options = {
                     valueNames: [
@@ -308,11 +321,12 @@ app.VERSION = "1.0-beta";
                 $("#dataset-loader").hide();
                 this_.datasets = results;
                 var datasetList = new List('dataset-list', options, results);
-		$("#dataset-count").html(this_.datasets.length + " datasets");
+				$("#dataset-count").html(this_.datasets.length + " datasets");
                 this_.displayGraphicOverviews();
                 datasetList.on("updated", function(evt){
                     this_.displayGraphicOverviews();
                 });
+				this_.updateSelection();
             });
          }
          
@@ -360,8 +374,7 @@ app.VERSION = "1.0-beta";
                 this.selection.push(dataset);
                 this.updateSelection();
                 this.updateDatasetSelector();
-                out = true;
-                
+                out = true;   
             }
             return out;
          }
@@ -446,7 +459,6 @@ app.VERSION = "1.0-beta";
           */
          app.updateDatasetSelector = function(init){
             var this_ = this;
-            
             var formatDatasetSelection = function(dataset) {
               if (!dataset.id) { return dataset.text; }
               var $dataset = $(
@@ -464,18 +476,15 @@ app.VERSION = "1.0-beta";
             };
             
             $("#datasetSelector").empty().append("<option></option>");
-            $("#datasetSelector").select2({
-                theme: "classic",
-                placeholder: "Select a dataset",
-                data: this_.selection.map(function(item){ return { id: item.pid, text: item.title}}),
-                templateResult: formatDatasetResult,
-                templateSelection: formatDatasetSelection
-            });
-            if(this.selected_dsd) {
-                $("#datasetSelector").val(this.selected_dsd.pid).trigger('change');
-            }
-            
-            if(init){
+			$("#datasetSelector").select2({
+				theme: "classic",
+				placeholder: "Select a dataset",
+				data: this_.selection.map(function(item){ return { id: item.pid, text: item.title}}),
+				templateResult: formatDatasetResult,
+				templateSelection: formatDatasetSelection
+			});
+			if(this_.selected_dsd) $("#datasetSelector").val(this_.selected_dsd.pid).trigger('change');
+			if(init){
                 $("#datasetSelector").on("select2:select", function (e) {
                     this_.getDSD(e.params.data.id);
                     $("#datasetMapper").show();
@@ -486,6 +495,31 @@ app.VERSION = "1.0-beta";
                 });   
             }
          }
+		 
+		/**
+		 * app.getDatasetFromCSW
+		 * @param pid
+		 */
+		app.getDatasetFromCSW = function(pid){
+			var this_ = this;
+			if(pid){
+				console.log("Fetching query interface for '"+pid+"'");
+				var pidFilter =  new Ows4js.Filter().PropertyName(['dc:identifier']).isLike(pid);
+				this_.csw.GetRecords(1, 1, pidFilter, this_.constants.METADATA_SCHEMA).then(function(result){
+					if(result.value.searchResults.numberOfRecordsMatched > 0){                 
+                        var csw_results = result.value.searchResults.any;
+						var md_entry = this_.createMetadataEntry(csw_results[0].value);
+						this_.openQueryDialog();
+						if(this_.selection.map(function(i){return i.pid}).indexOf(pid) == -1
+						   && md_entry.metadata.contentInfo){
+							this_.selection.push(md_entry);
+							this_.getDSD(pid);						
+							this_.updateDatasetSelector(); 					
+						}
+					}
+				});
+			}
+		}
          
          /**
           * app.parseDSD
@@ -561,6 +595,8 @@ app.VERSION = "1.0-beta";
                         dsd: this_.parseDSD(response),
                         query: null
                     };
+					
+					$("#datasetSelector").val(this_.selected_dsd.pid).trigger('change');
                     
                     //build UI
                     //1. Build codelist (multi-selection) UIs
@@ -1428,6 +1464,16 @@ app.VERSION = "1.0-beta";
             this_.addLayer(true, 0, "marineareas", "Marine areas",  "http://www.fao.org/figis/geoserver/fifao/wms", "fifao:MarineAreas", true, false, 0.9, true);
         }
 
+	/**
+	 * app.setEmbedLink
+	 */
+	app.setEmbedLink = function(){
+		if ( ! ( document.getElementById ) ) return void(0);
+		var url = location.href.replace(/#.*$/,'').replace(/\?.*$/,'');
+		if(this.selected_dsd) url += '?dataset=' + this.selected_dsd.pid;
+		document.getElementById('tuna-link').value = url;
+		document.getElementById('tuna-html').value = '<iframe src ="' + url + '" width="800" height="600" frameborder="0" marginheight="0"></iframe>';
+	}
         
 	//===========================================================================================
 	//Widgets UIs
@@ -1543,15 +1589,23 @@ app.VERSION = "1.0-beta";
 		//application init
 		//===========================================================================================
 		
-		//dynamic vs. static
-		var dynamicStyle = app.getAllUrlParams().dynamicStyle;
+		//init catalogue
+        app.initDataCatalogue();
+		
+		//url params
+		var params = app.getAllUrlParams();
+		
+		//dynamic parameters
+		//dynamic style
+		var dynamicStyle = params.dynamicStyle;
 		if(dynamicStyle) app.ui_options.dynamics.styling = dynamicStyle == "true";
-
+		//embedded link feature 'dataset' decoding
+		if(params.dataset) app.getDatasetFromCSW(params.dataset);
+		
         //init map
         app.configureViewer();
-        
-        //init catalogue
-        app.initDataCatalogue();
+		
+		//get Datasets from CSW
         app.displayDatasets();
         $("#dataset-form").submit(function() {
             app.displayDatasets();
@@ -1562,13 +1616,15 @@ app.VERSION = "1.0-beta";
                 
         //init widgets
         app.initDialog("aboutDialog", "Welcome!",{"ui-dialog": "about-dialog", "ui-dialog-title": "dialog-title"}, null, 0, null);
-        app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1, 'search');
+        app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1, 'search', function(){
+			app.updateSelection();
+		});
         app.initDialog("queryDialog", "Query a dataset", {"ui-dialog": "query-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 2, 'filter', function(){
             app.updateDatasetSelector();
         });
         app.openAboutDialog();
-        
 
+		
 	});
 	
 }( jQuery ));
