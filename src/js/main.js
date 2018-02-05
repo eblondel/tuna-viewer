@@ -325,6 +325,7 @@ app.VERSION = "1.0-beta";
                 this_.displayGraphicOverviews();
                 datasetList.on("updated", function(evt){
                     this_.displayGraphicOverviews();
+					this_.updateSelection();
                 });
 				this_.updateSelection();
             });
