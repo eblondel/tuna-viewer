@@ -42,7 +42,8 @@ app.VERSION = "1.0-beta";
 	app.ui_options = {
         time: 'slider',
 		dynamics : {
-			styling: true
+			styling: true,
+			styling_signs: [""," to ",""] //["[","–","["]
 		}
 	}
         
@@ -1324,12 +1325,12 @@ app.VERSION = "1.0-beta";
 				var breaks = this_.calculateBreaks(values, classType, classNb);
 				var envparams = this_.buildEnvParams(breaks);
 
-                		//update viewparams, envparams & legend
-                		layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
+                //update viewparams, envparams & legend
+                layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
 				layer.getSource().updateParams({'STYLES' : layerStyle});
 				layer.getSource().updateParams({'env' : envparams});
 				this_.setLegendGraphic(layer, breaks);
-                		this_.map.changed();
+                this_.map.changed();
 			});
 		}else{
 			//static styling
@@ -1377,6 +1378,7 @@ app.VERSION = "1.0-beta";
 	 * @param breaks an array of break values
 	 */	 
 	app.setLegendGraphic = function(lyr, breaks) {
+		var this_ = this;
 		var source = lyr.getSource();
 		if( source instanceof ol.source.TileWMS | source instanceof ol.source.ImageWMS ){
                 	var params = source.getParams();
@@ -1411,14 +1413,16 @@ app.VERSION = "1.0-beta";
 				    var dx = 36;
 				    var dy = breakPt;
 				    if(breaks){
-					if(breaks.length==5) breakSpace = 12;
-				    	for(var i=1;i<breaks.length;i++){
-						var breakLegend = "[ " + breaks[i-1] + " – " + breaks[i];
-						if(i==breaks.length-1){ breakLegend += " ]" }else{ breakLegend += " [" };
-						ctx.fillText(breakLegend, dx, dy);
-						dy = breakPt*(i+1) + breakSpace*i;
-				    	} 
-                                    	lyr.legendGraphic = canvas.toDataURL("image/png");
+						if(breaks.length==5) breakSpace = 12;
+						var break_signs = this_.ui_options.dynamics.styling_signs;
+						for(var i=1;i<breaks.length;i++){
+							var breakLegend = break_signs[0]+" " + breaks[i-1] + " "+break_signs[1]+" " + breaks[i];
+							//if(i==breaks.length-1){ breakLegend += " " + breaks_signs[2] }else{ breakLegend += " [" };
+							breakLegend += " " + break_signs[2]
+							ctx.fillText(breakLegend, dx, dy);
+							dy = breakPt*(i+1) + breakSpace*i;
+						} 
+						lyr.legendGraphic = canvas.toDataURL("image/png");
 				    }
 				};	
 			}else{
