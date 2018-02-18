@@ -1,9 +1,9 @@
 /**
- * Tuna Atas web-application prototype by UN FAO - 2017
- * Application development powered by FAO, and funded by BlueBridge EC project
- *
- * @author Emmanuel Blondel GIS & Marine web-information systems Expert <emmanuel.blondel@fao.org> (alternate email <emmanuel.blondel1@gmail.com>)
- *
+ * Global Tuna Atas web-application
+ * Application development funded by BlueBridge EC project
+ * 
+ * @author Emmanuel Blondel GIS & Marine web-information systems Expert
+ *		   Contact: https://eblondel.github.io / emmanuel.blondel1@gmail.com 
  */
 
 var app = app || {};
