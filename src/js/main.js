@@ -35,7 +35,7 @@ app.VERSION = "1.0-beta";
             OGC_WFS_BASEURL: undefined,
             OGC_WFS_BBOX: undefined,
             SEARCH_MAX_ITEMS_NUMBER: 50
-		}
+	}
         
         //UI options
 	//===========================================================================================
@@ -497,31 +497,27 @@ app.VERSION = "1.0-beta";
                 });   
             }
          }
-		 
-		/**
-		 * app.getDatasetFromCSW
-		 * @param pid
-		 */
-		app.getDatasetFromCSW = function(pid){
-			var this_ = this;
-			if(pid){
-				console.log("Fetching query interface for '"+pid+"'");
-				var pidFilter =  new Ows4js.Filter().PropertyName(['dc:identifier']).isLike(pid);
-				this_.csw.GetRecords(1, 1, pidFilter, this_.constants.METADATA_SCHEMA).then(function(result){
-					if(result.value.searchResults.numberOfRecordsMatched > 0){                 
-                        var csw_results = result.value.searchResults.any;
-						var md_entry = this_.createMetadataEntry(csw_results[0].value);
-						this_.openQueryDialog();
-						if(this_.selection.map(function(i){return i.pid}).indexOf(pid) == -1
-						   && md_entry.metadata.contentInfo){
-							this_.selection.push(md_entry);
-							this_.getDSD(pid);						
-							this_.updateDatasetSelector(); 					
-						}
-					}
-				});
+	
+	/**
+	 * app.getCSWRecord
+	 * @param pid
+	 * @returns a promise
+	 */
+	app.getCSWRecord = function(pid){
+		console.log("Fetching metadata record from CSW for pid = '"+pid+"'");
+		var this_ = this;
+		var deferred = $.Deferred();
+		var pidFilter =  new Ows4js.Filter().PropertyName(['dc:identifier']).isLike(pid);
+		this_.csw.GetRecords(1, 1, pidFilter, this_.constants.METADATA_SCHEMA).then(function(result){
+			var md_entry = new Object();
+			if(result.value.searchResults.numberOfRecordsMatched > 0){                 
+                       		var csw_results = result.value.searchResults.any;
+				md_entry = this_.createMetadataEntry(csw_results[0].value);
 			}
-		}
+			deferred.resolve(md_entry);
+		});
+		return deferred.promise();
+	}	 
          
          /**
           * app.parseDSD
@@ -576,6 +572,8 @@ app.VERSION = "1.0-beta";
           * @param pid
           */
           app.getDSD = function(pid){
+
+	    var deferred = $.Deferred();	
           
             $("#dsd-ui").empty();
             $("#dsd-loader").show();
@@ -598,7 +596,7 @@ app.VERSION = "1.0-beta";
                         query: null
                     };
 					
-					$("#datasetSelector").val(this_.selected_dsd.pid).trigger('change');
+		    $("#datasetSelector").val(this_.selected_dsd.pid).trigger('change');
                     
                     //build UI
                     //1. Build codelist (multi-selection) UIs
@@ -680,9 +678,9 @@ app.VERSION = "1.0-beta";
                     var dsd_time_dimensions = ["time_start", "time_end"];
                     var timeDimensions = this_.selected_dsd.dsd.filter(function(item){if(dsd_time_dimensions.indexOf(item.code) != -1) return item});
                     if(timeDimensions.length == 2){
-                        var timeWidget = this_.ui_options.time? this_.ui_options.time : 'slider';
+                        this_.timeWidget = this_.ui_options.time? this_.ui_options.time : 'slider';
                         
-                        if(timeWidget == "slider"){
+                        if(this_.timeWidget == "slider"){
                             //id
                             var dsd_component_id = "dsd-ui-time";
                             var dsd_component_id_range = dsd_component_id + "-range";
@@ -705,7 +703,7 @@ app.VERSION = "1.0-beta";
                             });
                             $("#"+dsd_component_id_range).val($("#"+dsd_component_id).slider( "values", 0 ) + " - " +  $("#"+dsd_component_id).slider( "values", 1 ));
                         
-                        }else if(timeWidget == "datepicker"){
+                        }else if(this_.timeWidget == "datepicker"){
                             $("#dsd-ui-col-2").append('<br><div class="dsd-ui-dimension dsd-ui-dimension-time"><p style="margin:0;"><label>Temporal extent</label></p>');
                             for(var i=0;i<dsd_time_dimensions.length;i++){
                                 var dsd_time_dimension = dsd_time_dimensions[i];
@@ -880,15 +878,12 @@ app.VERSION = "1.0-beta";
                         $('#dsd-ui-button-csv2').prop('disabled', true);
                     }
                     
+		    deferred.resolve();
                 }
             });
-        }
-        
-        /**
-         * app.saveQuery
-         */
-        app.saveQuery = function(){
-            //TODO
+		
+ 	    return deferred.promise();
+
         }
         
         /**
@@ -908,15 +903,14 @@ app.VERSION = "1.0-beta";
             })
             
             //grab time dimension (time_start/time_end)
-            var timeWidget = this_.ui_options.time? this_.ui_options.time : 'slider';
-            if(timeWidget == 'slider'){
+            if(this_.timeWidget == 'slider'){
                 var values = $("#dsd-ui-time").slider('values');
                 var time_start = new Date(values[0], 1 - 1, 1).toISOString().split('T')[0];
                 var time_end = new Date(values[1], 1 - 1, 1).toISOString().split('T')[0];
                 var data_component_query = 'time_start:' + time_start + ';' + 'time_end:' + time_end;
                 data_query += data_component_query + ';';
                 
-            }else if(timeWidget == 'datepicker'){
+            }else if(this_.timeWidget == 'datepicker'){
                 var time_start = $($(".dsd-ui-dimension-datepicker")[0]).datepicker( "getDate" );
                 if(!time_start) time_start = new Date(this.selected_dsd.dataset.time_start).toISOString().split('T')[0];
                 var time_end = $($(".dsd-ui-dimension-datepicker")[1]).datepicker( "getDate" );
@@ -1023,8 +1017,8 @@ app.VERSION = "1.0-beta";
                 });
                 overlays.push(overlay);
             }
-			var defaultMapExtent = ((this.constants.OGC_WFS_BBOX)? this.constants.OGC_WFS_BBOX : [-180, -90, 180, 90]);
-			var defaultMapZoom = ((this.constants.OGC_WFS_BBOX)? 5 : this.constants.MAP_ZOOM);
+	    var defaultMapExtent = ((this.constants.OGC_WFS_BBOX)? this.constants.OGC_WFS_BBOX : [-180, -90, 180, 90]);
+	    var defaultMapZoom = ((this.constants.OGC_WFS_BBOX)? 5 : this.constants.MAP_ZOOM);
             
             if(main){
                 this.layers.baseLayers = baseLayers;
@@ -1095,11 +1089,12 @@ app.VERSION = "1.0-beta";
          * @param layer
        	 * @param cql_filter
          * @param viewparams
+	 * @param envfun
 	 * @param envparams
 	 * @param style
 	 */
 	app.addLayer = function(main, mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, tiled,
-				cql_filter, viewparams, envparams, style){
+				cql_filter, viewparams, envfun, envparams, style){
             var this_ = this;
             var layerParams = {
                     'LAYERS' : layer,
@@ -1134,6 +1129,7 @@ app.VERSION = "1.0-beta";
             
 	    this.setLegendGraphic(layer);
             layer.id = id;
+	    layer.envfun = envfun;
 	    layer.showLegendGraphic = showLegend;
 			
             if(main){
@@ -1306,10 +1302,10 @@ app.VERSION = "1.0-beta";
 			this_.getDatasetValues(viewparams).then(function(values){
 				var breaks = this_.calculateBreaks(values, classType, classNb);
 				var envparams = this_.buildEnvParams(breaks);
-				var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title,layerUrl, layerName, true, true, 0.9, true, null, viewparams, envparams, layerStyle);
+				var layer = this_.addLayer(true, 1, this_.selected_dsd.pid, app.selected_dsd.dataset.title,layerUrl, layerName, true, true, 0.9, true, null, viewparams, classType, envparams, layerStyle);
 				this_.setLegendGraphic(layer, breaks);	
 				this_.map.changed();				
-			})
+			});
 
 		}else{
 			//static styling
@@ -1325,12 +1321,13 @@ app.VERSION = "1.0-beta";
 				var breaks = this_.calculateBreaks(values, classType, classNb);
 				var envparams = this_.buildEnvParams(breaks);
 
-                //update viewparams, envparams & legend
-                layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
+                		//update viewparams, envparams & legend
+                		layer.getSource().updateParams({'VIEWPARAMS' : viewparams});
 				layer.getSource().updateParams({'STYLES' : layerStyle});
 				layer.getSource().updateParams({'env' : envparams});
+				layer.envfun = classType;
 				this_.setLegendGraphic(layer, breaks);
-                this_.map.changed();
+                		this_.map.changed();
 			});
 		}else{
 			//static styling
@@ -1475,10 +1472,163 @@ app.VERSION = "1.0-beta";
 	app.setEmbedLink = function(){
 		if ( ! ( document.getElementById ) ) return void(0);
 		var url = location.href.replace(/#.*$/,'').replace(/\?.*$/,'');
+		
+		//dataset
 		if(this.selected_dsd) url += '?dataset=' + this.selected_dsd.pid;
+		
+		//views
+		var encoded_views = new Array();
+		var viewlayers = this.layers.overlays[1].getLayers().getArray();
+		for(var i=0;i<viewlayers.length;i++){
+			var encoded_view = "";
+			var viewlayer = viewlayers[i];
+			var params = viewlayer.getSource().getParams();
+			var pid = viewlayer.id;
+			encoded_view += 'pid=' + pid + ',';
+			encoded_view += 'par=' + params['VIEWPARAMS'] + ',';
+			encoded_view += 'fun=' + viewlayer.envfun + ',';
+			encoded_view += 'env=' + params['env'] + ',';
+			encoded_view += 'sld=' + params['STYLES'] + ',';
+			encoded_view += 'q=' + ((this.selected_dsd.pid == pid)? true : false);
+			encoded_views.push(encoded_view);
+		}
+		if(viewlayers.length > 0) url += '&views=' + encodeURIComponent(JSON.stringify(encoded_views));
+	
 		document.getElementById('tuna-link').value = url;
 	}
         
+	//===========================================================================================
+	//URL resolvers
+	//===========================================================================================
+
+	/**
+	 * app.resolveDatasetForQuery
+	 * @param datasetDef
+	 */
+	app.resolveDatasetForQuery = function(datasetDef){
+		var this_ = this;
+		console.log("Fetching query interface for pid = '"+datasetDef.pid+"'");
+		this_.openQueryDialog();
+		this_.getDSD(datasetDef.pid).then(function(){						
+			this_.updateDatasetSelector();
+		
+			if(datasetDef.query){
+				//view params
+				var viewparams = datasetDef.viewparams.split(";");
+				var timeparams = new Array();
+				for(var i=0;i<viewparams.length;i++){
+					var viewparam = viewparams[i];
+					var kvp = viewparam.split(":");
+					var key = kvp[0];
+					if(!key.match("time")){
+						var values = kvp[1].split("+");
+						$("#dsd-ui-dimension-"+key).val(values).trigger('change');
+					}else{
+				 		timeparams.push({key: kvp[0], value: kvp[1]});
+					}
+				}
+				//time params
+				if(timeparams.length==2){
+					if(this_.timeWidget == "slider"){
+						$("#dsd-ui-time").slider('values', [parseInt(timeparams[0].value.substring(0,4)), parseInt(timeparams[1].value.substring(0,4))]);
+						$("#dsd-ui-time-range").val($("#dsd-ui-time").slider( "values", 0 ) + " - " +  $("#dsd-ui-time").slider( "values", 1 ));
+					}else if(this_.timeWidget == "datepicker"){
+						$("#dsd-ui-time_start").datepicker('setDate', timeparams[0].value);
+						$("#dsd-ui-time_end").datepicker('setDate', timeparams[1].value);
+					}
+				}
+
+				//map options
+				var envfun = datasetDef.envfun;
+				$("#map-classtype-selector").val(envfun).trigger('change');
+				var envparams = datasetDef.envparams;
+				$("#map-classnb-selector").val(datasetDef.breaks.length-1).trigger('change');
+			} 		
+		});
+	}
+
+	/**
+	 * app.resolveDatasetForMap
+	 * @param datasetDef
+	 */
+	app.resolveDatasetForMap = function(datasetDef){
+		var this_ = this;
+		var layerName = datasetDef.pid + "_aggregated";
+		var layerUrl = datasetDef.entry.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine
+			.filter(function(item){if(item.ciOnlineResource.linkage.url.indexOf('wms')!=-1) return item})[0].ciOnlineResource.linkage.url;
+		var layer = this.addLayer(true, 1, datasetDef.pid, datasetDef.entry.title, layerUrl, layerName, true, true, 0.9, true, null,
+					  datasetDef.viewparams, datasetDef.envfun, datasetDef.envparams, datasetDef.style);
+		this_.setLegendGraphic(layer, datasetDef.breaks);		
+	}
+
+	/**
+	 * app.resolveViewer
+	 * Resolves the map viewer from URL parameters
+	 */
+	app.resolveViewer = function(){
+		var this_ = this;
+		
+		//url params
+		var params = this_.getAllUrlParams();
+		
+		//dynamic parameters
+		//dynamic style
+		var dynamicStyle = params.dynamicStyle;
+		if(dynamicStyle) this_.ui_options.dynamics.styling = dynamicStyle == "true";
+	
+		//embedded link feature 'dataset' decoding
+		if(params.dataset & !params.views){
+			var datasetDef = {pid: params.dataset}
+			this_.getCSWRecord(datasetDef.pid).then(function(md_entry){
+				if(this_.selection.map(function(i){return i.pid}).indexOf(pid) == -1
+			   	   && md_entry.metadata.contentInfo){
+					this_.selection.push(md_entry);
+					this_.resolveDatasetForQuery(datasetDef);			
+				}
+			});
+		}
+			
+		//embedded link feature 'views'
+		if(params.views){
+			var encoded_views = JSON.parse(decodeURIComponent(params.views));
+			var encoded_datasets = new Array();
+			for(var i=0;i<encoded_views.length;i++){
+				var encoded_view = encoded_views[i];
+				var encoded_view_settings = encoded_view.split(",");
+				var pid = encoded_view_settings[0].split("pid=")[1];
+				var viewparams = encoded_view_settings[1].split("par=")[1];
+				var envfun = encoded_view_settings[2].split("fun=")[1];
+				var envparams = encoded_view_settings[3].split("env=")[1];
+				var style = encoded_view_settings[4].split("sld=")[1];
+				var query = encoded_view_settings[5].split("q=")[1];
+				var breaks = envparams.split(";"); breaks.splice(-1,1);
+				breaks = breaks.map(function(key){return parseFloat(key.split(":")[1])});
+				encoded_datasets.push({pid: pid, viewparams: viewparams, envfun: envfun, envparams: envparams, breaks: breaks, style: style, query: query});
+			}
+
+			var metadata_promises = new Array();
+			for(var i=0;i<encoded_datasets.length;i++){
+				metadata_promises.push( this_.getCSWRecord(encoded_datasets[i].pid) );
+			}
+			$.when.apply($, metadata_promises).done(function(md_entries){
+				if(!md_entries.length) md_entries = [md_entries];
+				for(var i = 0; i<md_entries.length;i++){
+					var md_entry = md_entries[i];
+					var encoded_dataset = encoded_datasets[i];
+					encoded_dataset.entry = md_entry;
+					this_.selection.push(md_entry);				
+
+					//if it was the last dataset queried by user we fill the query interface with param values
+					if(encoded_dataset.query) this_.resolveDatasetForQuery(encoded_dataset);
+				
+					//resolve map
+					this_.resolveDatasetForMap(encoded_dataset);
+				}
+				this_.map.changed();
+			});
+		}
+	}
+
 	//===========================================================================================
 	//Widgets UIs
 	//===========================================================================================
@@ -1589,27 +1739,17 @@ app.VERSION = "1.0-beta";
             this.closeDialog("queryDialog");
         }
         
-		//===========================================================================================
-		//application init
-		//===========================================================================================
+	//===========================================================================================
+	//application init
+	//===========================================================================================
 		
-		//init catalogue
+	//init catalogue
         app.initDataCatalogue();
-		
-		//url params
-		var params = app.getAllUrlParams();
-		
-		//dynamic parameters
-		//dynamic style
-		var dynamicStyle = params.dynamicStyle;
-		if(dynamicStyle) app.ui_options.dynamics.styling = dynamicStyle == "true";
-		//embedded link feature 'dataset' decoding
-		if(params.dataset) app.getDatasetFromCSW(params.dataset);
-		
+	
         //init map
         app.configureViewer();
 		
-		//get Datasets from CSW
+	//get Datasets from CSW
         app.displayDatasets();
         $("#dataset-form").submit(function() {
             app.displayDatasets();
@@ -1621,15 +1761,16 @@ app.VERSION = "1.0-beta";
         //init widgets
         app.initDialog("aboutDialog", "Welcome!",{"ui-dialog": "about-dialog", "ui-dialog-title": "dialog-title"}, null, 0, null);
         app.initDialog("dataDialog", "Browse data catalogue", {"ui-dialog": "data-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 1, 'search', function(){
-			app.updateSelection();
-		});
+		app.updateSelection();
+	});
         app.initDialog("queryDialog", "Query a dataset", {"ui-dialog": "query-dialog", "ui-dialog-title": "dialog-title"}, { my: "left top", at: "left center", of: window }, 2, 'filter', function(){
             app.updateDatasetSelector();
         });
         app.openAboutDialog();
 
-		
-	});
+	//resolve viewer from URL
+	app.resolveViewer();
+   });
 	
 }( jQuery ));
 
