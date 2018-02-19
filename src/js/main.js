@@ -1509,9 +1509,8 @@ app.VERSION = "1.0-beta";
 		var this_ = this;
 		console.log("Fetching query interface for pid = '"+datasetDef.pid+"'");
 		this_.openQueryDialog();
-		this_.getDSD(datasetDef.pid).then(function(){						
+		this_.getDSD(datasetDef.pid).then(function(){					
 			this_.updateDatasetSelector();
-		
 			if(datasetDef.query){
 				//view params
 				var viewparams = datasetDef.viewparams.split(";");
@@ -1552,6 +1551,7 @@ app.VERSION = "1.0-beta";
 	 * @param datasetDef
 	 */
 	app.resolveDatasetForMap = function(datasetDef){
+		console.log("Resolving map for pid = '"+datasetDef.pid+"'");
 		var this_ = this;
 		var layerName = datasetDef.pid + "_aggregated";
 		var layerUrl = datasetDef.entry.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine
@@ -1582,7 +1582,8 @@ app.VERSION = "1.0-beta";
 			this_.getCSWRecord(datasetDef.pid).then(function(md_entry){
 				if(this_.selection.map(function(i){return i.pid}).indexOf(pid) == -1
 			   	   && md_entry.metadata.contentInfo){
-					this_.selection.push(md_entry);
+					datasetDef.entry = md_entry;
+					this_.selection.push(datasetDef.entry);	
 					this_.resolveDatasetForQuery(datasetDef);			
 				}
 			});
@@ -1591,6 +1592,7 @@ app.VERSION = "1.0-beta";
 		//embedded link feature 'views'
 		if(params.views){
 			var encoded_views = JSON.parse(decodeURIComponent(params.views));
+			console.log(encoded_views);
 			var encoded_datasets = new Array();
 			for(var i=0;i<encoded_views.length;i++){
 				var encoded_view = encoded_views[i];
@@ -1600,7 +1602,7 @@ app.VERSION = "1.0-beta";
 				var envfun = encoded_view_settings[2].split("fun=")[1];
 				var envparams = encoded_view_settings[3].split("env=")[1];
 				var style = encoded_view_settings[4].split("sld=")[1];
-				var query = encoded_view_settings[5].split("q=")[1];
+				var query = encoded_view_settings[5].split("q=")[1] == "true";
 				var breaks = envparams.split(";"); breaks.splice(-1,1);
 				breaks = breaks.map(function(key){return parseFloat(key.split(":")[1])});
 				encoded_datasets.push({pid: pid, viewparams: viewparams, envfun: envfun, envparams: envparams, breaks: breaks, style: style, query: query});
@@ -1610,22 +1612,22 @@ app.VERSION = "1.0-beta";
 			for(var i=0;i<encoded_datasets.length;i++){
 				metadata_promises.push( this_.getCSWRecord(encoded_datasets[i].pid) );
 			}
-			$.when.apply($, metadata_promises).done(function(md_entries){
-				if(!md_entries.length) md_entries = [md_entries];
-				for(var i = 0; i<md_entries.length;i++){
-					var md_entry = md_entries[i];
-					var encoded_dataset = encoded_datasets[i];
-					encoded_dataset.entry = md_entry;
-					this_.selection.push(md_entry);				
-
+			console.log("Sending "+metadata_promises.length+" metadata record request(s)...");
+			metadata_promises.forEach(function(promise, i){
+            			$.when(promise).then(function(md_entry) {
+      					var encoded_dataset = encoded_datasets[i];
+					encoded_dataset.entry = md_entry;				
+					console.log(encoded_dataset);
+					this_.selection.push(encoded_dataset.entry);	
+					
 					//if it was the last dataset queried by user we fill the query interface with param values
 					if(encoded_dataset.query) this_.resolveDatasetForQuery(encoded_dataset);
 				
 					//resolve map
 					this_.resolveDatasetForMap(encoded_dataset);
-				}
-				this_.map.changed();
-			});
+					this_.map.changed();
+            			});
+        			});
 		}
 	}
 
