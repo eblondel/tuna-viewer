@@ -1577,8 +1577,8 @@ app.VERSION = "1.0-beta";
 		if(dynamicStyle) this_.ui_options.dynamics.styling = dynamicStyle == "true";
 	
 		//embedded link feature 'dataset' decoding
-		if(params.dataset & !params.views){
-			var datasetDef = {pid: params.dataset}
+		if(params.dataset && !params.views){
+			var datasetDef = {pid: params.dataset};
 			this_.getCSWRecord(datasetDef.pid).then(function(md_entry){
 				if(this_.selection.map(function(i){return i.pid}).indexOf(pid) == -1
 			   	   && md_entry.metadata.contentInfo){
