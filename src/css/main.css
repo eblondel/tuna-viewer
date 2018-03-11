@@ -37,9 +37,8 @@ nav ul li.active { background-color: #0C71B8;}
 .about-dialog .ui-dialog-titlebar{border-color:#1674B8; background-color:#fff; opacity:0.95; color:#000; border-radius:0px;}
 .partner-logo{ height:40px; margin-top:10px; margin-right:5px;}
 .partner-logos{text-align:center;}
-.data-dialog { width: 400px; height: 85% !important; top: 15% !important; }
-.query-dialog { height: 85% !important; top: 15% !important; }
-.query-dialog-width{ width:400px;}
+.data-dialog { width: 400px !important; height: 85% !important; top: 15% !important; }
+.query-dialog { width: 400px; height: 85% !important; top: 15% !important; }
 .data-dialog, .query-dialog {border-color:#1674B8; background-color:#fff; opacity:0.95; color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
 .data-dialog .ui-dialog-content, .query-dialog .ui-dialog-content { color:#000; border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px; padding: .5em .1em}
 .data-dialog .ui-dialog-titlebar, .query-dialog .ui-dialog-titlebar{background-color:#fff; opacity:0.95; color:#000;border-top-right-radius: 12px; -moz-border-top-right-radius: 12px; -webkit-border-top-right-radius: 12px;}
