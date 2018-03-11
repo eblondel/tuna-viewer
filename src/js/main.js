@@ -51,7 +51,9 @@ $(document).ready(function(){
 		map : {
 			layergroups : [{name: "Base overlays"},{name: "Tuna maps"}]
 		},
-		ui 	: { time: 'slider'}
+		ui 	: {
+			query: { columns: 2, time: 'slider'}
+		}
 	});
 	app.init();
 });
