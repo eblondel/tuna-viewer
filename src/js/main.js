@@ -18,12 +18,13 @@ $(document).ready(function(){
 				group: 0, id: "eez", title: "EEZ boundaries",
 				wmsUrl: "http://geo.vliz.be/geoserver/MarineRegions/wms", layer: "MarinRegions:eez_boundaries",
 				visible: false, showLegend: true, opacity: 0.6, tiled: true, cql_filter: undefined
-			},	
-			{
+			},
+			//FAO FI Geoserver doesn't support CORS	
+			/*{
 				group: 0, id: "fsa", title: "FAO major areas & breakdown",
 				wmsUrl: "http://www.fao.org/figis/geoserver/area/wms", layer: "area:FAO_AREAS",
 				visible: false, showLegend: true, opacity: 0.9, tiled: true, cql_filter: undefined
-			},
+			},*/
 			{
 				group: 0, id: "grid1x1", title: "Grid 1x1 (CWP)",
 				wmsUrl: "https://tunaatlas.d4science.org/geoserver/tunaatlas/wms", layer: "tunaatlas:grid1x1,tunaatlas:continent",
@@ -36,7 +37,7 @@ $(document).ready(function(){
 			},
 			{
 				group: 0, id: "marineareas", title: "Marine areas",
-				wmsUrl: "http://www.fao.org/figis/geoserver/fifao/wms", layer: "fifao:MarineAreas",
+				wmsUrl: "https://tunaatlas.d4science.org/geoserver/tunaatlas/wms", layer: "tunaatlas:MarineAreas",
 				visible: true, showLegend: true, opacity: 0.9, tiled: true, cql_filter: undefined
 			}
 		]
