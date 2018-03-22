@@ -37,7 +37,7 @@ $(document).ready(function(){
 			{
 				group: 0, id: "marineareas", title: "Marine areas",
 				wmsUrl: "https://tunaatlas.d4science.org/geoserver/tunaatlas/wms", layer: "tunaatlas:MarineAreas",
-				visible: true, showLegend: false, opacity: 0.9, tiled: true, cql_filter: undefined
+				visible: true, showLegend: false, opacity: 0.9, tiled: false, cql_filter: undefined
 			}
 		]
 	},{
