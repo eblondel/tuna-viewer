@@ -15,6 +15,11 @@ $(document).ready(function(){
 		OGC_CSW_SCHEMA : "http://www.isotc211.org/2005/gmd",
 		OGC_WMS_LAYERS : [
 			{
+				group: 2, id: "continent", title: "Continent",
+				wmsUrl: "https://tunaatlas.d4science.org/geoserver/tunaatlas/wms", layer: "tunaatlas:continent",
+				visible: true, showLegend: false, opacity: 1, tiled: true, cql_filter: undefined
+			},
+			{
 				group: 0, id: "eez", title: "EEZ boundaries",
 				wmsUrl: "http://geo.vliz.be/geoserver/MarineRegions/wms", layer: "MarinRegions:eez_boundaries",
 				visible: false, showLegend: true, opacity: 0.6, tiled: true, cql_filter: undefined
@@ -49,7 +54,8 @@ $(document).ready(function(){
 			]
 		},
 		map : {
-			layergroups : [{name: "Base overlays"},{name: "Tuna maps"}]
+			layergroups : [{name: "Base overlays"},{name: "Tuna maps"},{name: "Additional overlays"}],
+			mainlayergroup: 1
 		},
 		ui 	: {
 			query: { columns: 2, time: 'slider'}
