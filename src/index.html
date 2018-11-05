@@ -192,7 +192,7 @@
 		</div>
         
         <!-- Dynamic query UI -->
-        <div div="dsd-ui-wrapper">
+        <div id="dsd-ui-wrapper">
           <!-- Search loader -->
           <p id="dsd-loader" class="loader">
             <img alt="loading" src="js/openfisviewer/img/loading.gif" />
@@ -200,6 +200,14 @@
           </p>
           <!-- Dynamic query -->
           <div id="dsd-ui"></div>
+        </div>
+    </div>
+    <div id="infoDialog">
+        <div class="row" style="height:100% !important;">
+            <div class="col-md-12" style="height:100% !important;">
+                <div id="datasetInfo" style="height:100% !important; background:url(js/openfisviewer/img/loading.gif) center center no-repeat;">
+            	</div>
+            </div>
         </div>
     </div>
     
@@ -213,6 +221,9 @@
 	   </div>
        <div class="col-xs-9 col-sm-9 col-md-9 excerpet">
             <h6><a href="#" title="" class="title title_tooltip truncate"></a></h6>
+            <button class="btn btn-xs dataset-button dataset-button-info pidinfo"
+		    data-pid="" title="More information"
+		    onclick="app.displayDatasetInfo(this)"><span class="glyphicon glyphicon-info-sign"></span></button>
             <button class="btn btn-xs dataset-button dataset-button-add pid"
 		    data-pid="" title="Add to selection"
 		    onclick="app.actionDataset(this)"><span class="glyphicon glyphicon-plus"></span></button>

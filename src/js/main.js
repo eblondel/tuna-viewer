@@ -58,6 +58,13 @@ $(document).ready(function(){
 			mainlayergroup: 1
 		},
 		ui 	: {
+			browse: {
+				datasetInfoHandler : function(metadata){
+					var datasetInfoUrl = "https://tunaatlas.d4science.org/geonetwork/srv/eng/catalog.search#/metadata/" + metadata.fileIdentifier;
+					$('#datasetInfo').empty().html('<iframe src="'+datasetInfoUrl+'" style="overflow: hidden; height: 100%; width: 100%; position: absolute;"> frameborder="0" marginheight="0"></iframe>');
+					app.openInfoDialog();
+				}
+			},
 			query: { columns: 2, time: 'slider'}
 		}
 	});
