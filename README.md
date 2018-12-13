@@ -2,7 +2,7 @@
 
 **Tuna Atlas prototype web-application**
 
-The Tuna Atlas prototype is a web data and map viewer allowing to query Tuna fisheries datasets (timeseries), visualize and share data.
+The Tuna Atlas prototype is a web data and map viewer allowing to query Tuna fisheries datasets (timeseries), visualize and share data. It is based on the [OpenFairViewer](https://github.com/eblondel/OpenFairViewer) generic tool.
 
 ##Fundings
 
