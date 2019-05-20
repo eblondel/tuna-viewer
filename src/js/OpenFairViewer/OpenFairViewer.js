@@ -1,5 +1,5 @@
 /**
- * OpenFairViewer - a FAIR, ISO and OGC (meta)data compliant GIS data viewer (20181213)
+ * OpenFairViewer - a FAIR, ISO and OGC (meta)data compliant GIS data viewer (20190221)
  * Copyright (c) 2018 Emmanuel Blondel
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -55,7 +55,7 @@
 		var this_ = this;
 		
 		//version
-		this.versioning = {VERSION: "1.0.0", DATE: new Date(2018,12,13)}
+		this.versioning = {VERSION: "1.0.2", DATE: new Date(2019,05,08)}
 		
 		if(!config.OGC_CSW_BASEURL){
 			alert("FisViewer instance cannot be instantiated. Missing CSW endpoint")
@@ -104,10 +104,12 @@
 		
 		//MAP options
 		this.options.map = {};
+		//watermark
+		this.options.map.attribution = options.map.attribution? options.map.attribution : null;
 		//projection
-		this.options.map.projection = options.map.projection? options.map.projetion : 'EPSG:4326';
+		this.options.map.projection = options.map.projection? options.map.projection : 'EPSG:4326';
 		//zoom
-		this.options.map.zoom = options.map.zoom? options.map.zoom : 2.5;
+		this.options.map.zoom = options.map.zoom? options.map.zoom : 3;
 		//extent
 		this.options.map.extent = [-180, -90, 180, 90];
 		if(options.map.extent){
@@ -174,6 +176,12 @@
 			if(options.map.tooltip.enabled) this.options.map.tooltip.enabled = options.map.tooltip.enabled;
 			if(options.map.tooltip.handler) this.options.map.tooltip.handler = options.map.tooltip.handler;
 		}
+		
+		//panels
+		this.options.panel = {}
+		if(options.panel) {
+				this.options.panel.welcome = options.panel.about? options.panel.about : 'aboutDialog2';				
+		}
 	}
 	
 	//Init
@@ -206,6 +214,8 @@
 		
 		//resolve viewer from URL
 		this.resolveViewer();
+		
+		this._copyright();
 	}
         
 	//Utils
@@ -1287,7 +1297,7 @@
 		}     
         
 	    //map
-            var mapId = id? id : 'map';
+		var mapId = id? id : 'map';
 	    $("#"+mapId).empty();
 		var map = new ol.Map({
 			id: mapId,
@@ -1325,6 +1335,32 @@
 			map.getView().setZoom(this.options.map.zoom);
 		}
 		
+		//Attribution
+		if(this.options.map.attribution){
+			console.log("YUPI");
+			
+			//create base attribution for handling the watermark
+			var baseAttribution = new ol.control.Attribution({
+				className: 'ol-attribution-map',
+				collapsible: false
+			});
+			map.addControl(baseAttribution);
+			
+			//manage the display of watermark (logo)
+			var attMaps = map.getTargetElement().getElementsByClassName("ol-attribution-map");
+			if( attMaps.length > 0) attMaps[0].getElementsByTagName("li")[0].innerHTML = this.options.map.attribution;
+			
+			//hack to remove the baselayer attribution that for some reason is also added to the ol-attribution-map
+			//while explicitely referenced on ol-attribution-baselayer (to investigate if there is a cleaner solution)
+			map.on('postrender', function() {
+				var attMaps = this.getTargetElement().getElementsByClassName("ol-attribution-map");
+				if( attMaps.length > 0){
+					var attLis = attMaps[0].getElementsByTagName("li");
+					if( attLis.length > 1) attLis[1].remove();
+				}
+			});
+		}
+		
 		//events
 		//------
 		//spatial search
@@ -1352,7 +1388,7 @@
 	 * @param envparams
 	 * @param count
 	 */
-	OpenFairViewer.prototype.addLayer = function(mainOverlayGroup, id, title, wmsUrl, layer, visible, showLegend, opacity, tiled,
+	OpenFairViewer.prototype.addLayer = function(mainOverlayGroup, id, title, wmsUrl, layer, hidden, visible, showLegend, opacity, tiled,
 											cql_filter, style, viewparams, envfun, envparams, count){
 		var this_ = this;
 		var layerParams = {
@@ -1371,11 +1407,12 @@
 		
 		if(cql_filter){ layerParams['CQL_FILTER'] = cql_filter; }
 		if(viewparams){ layerParams['VIEWPARAMS'] = viewparams; }
+		hidden = hidden? hidden : false;
 	    if(envparams){ layerParams['env'] = envparams; }
 	    if(style) layerParams['STYLES'] = style;
 	    var layer = new olLayerClass({
-		id : id,
-		title : title,
+		id : (hidden? undefined : id),
+		title : (hidden? undefined : title),
 		source : new olSourceClass({
 			url : wmsUrl,
 			params : layerParams,
@@ -1633,7 +1670,7 @@
 						if(breaks.length == 2) breaks[0] = 0;
 						console.log(breaks);
 						var envparams = this_.buildEnvParams(breaks);
-						var layer = this_.addLayer(this_.options.map.mainlayergroup, this_.selected_dsd.pid, layerTitle,layerUrl, layerName, true, true, 0.9, true, null, layerStyle, viewparams, classType, envparams, values.length);
+						var layer = this_.addLayer(this_.options.map.mainlayergroup, this_.selected_dsd.pid, layerTitle,layerUrl, layerName, false, true, true, 0.9, true, null, layerStyle, viewparams, classType, envparams, values.length);
 						this_.addLayerTooltip(layer);
 						this_.setLegendGraphic(layer, breaks);	
 						this_.map.changed();
@@ -1657,7 +1694,7 @@
 				});
 			}else{
 				//static styling
-				var layer = this_.addLayer(this_.options.map.mainlayergroup, this_.selected_dsd.pid, layerTitle,layerUrl, layerName, true, true, 0.9, true, null, null, viewparams);
+				var layer = this_.addLayer(this_.options.map.mainlayergroup, this_.selected_dsd.pid, layerTitle,layerUrl, layerName, false, true, true, 0.9, true, null, null, viewparams);
 				this_.map.changed();
 				//actions o download buttons
 				$('#dsd-ui-button-csv1').prop('disabled', false);
@@ -1969,7 +2006,7 @@
 			for(var i=0;i<this.config.OGC_WMS_LAYERS.length;i++){
 				var layerDef = this.config.OGC_WMS_LAYERS[i];			
 				this_.addLayer(
-					layerDef.group, layerDef.id, layerDef.title, layerDef.wmsUrl, layerDef.layer,
+					layerDef.group, layerDef.id, layerDef.title, layerDef.wmsUrl, layerDef.layer, layerDef.hidden,
 					layerDef.visible, layerDef.showLegend, layerDef.opacity, layerDef.tiled, layerDef.cql_filter, layerDef.style
 				);
 			}
@@ -2076,7 +2113,7 @@
 		var layerName = datasetDef.pid + "_aggregated";
 		var layerUrl = datasetDef.entry.metadata.distributionInfo.mdDistribution.transferOptions[0].mdDigitalTransferOptions.onLine
 			.filter(function(item){if(item.ciOnlineResource.linkage.url.indexOf('wms')!=-1) return item})[0].ciOnlineResource.linkage.url;
-		var layer = this.addLayer(1, datasetDef.pid, datasetDef.title, layerUrl, layerName, true, true, 0.9, true, null,
+		var layer = this.addLayer(1, datasetDef.pid, datasetDef.title, layerUrl, layerName, false, true, true, 0.9, true, null,
 					  datasetDef.style, datasetDef.viewparams, datasetDef.envfun, datasetDef.envparams, datasetDef.count);
 		this_.addLayerTooltip(layer);
 		this_.setLegendGraphic(layer, datasetDef.breaks);		
@@ -2289,6 +2326,13 @@
 	*/
 	OpenFairViewer.prototype.closeInfoDialog = function(){
 		this.closeDialog("infoDialog");
+	}
+	
+   /**
+	*
+	*/
+	OpenFairViewer.prototype._copyright = function(){
+		$("body").append("<footer><a href='https://doi.org/10.5281/zenodo.2249305'>&copy; OpenFairViewer <small>(version "+this.versioning.VERSION+")</small</a></footer>")
 	}
 
 }));
